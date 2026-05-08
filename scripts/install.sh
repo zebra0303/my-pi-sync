@@ -46,7 +46,7 @@ npm install -g "npm@$NPM_VERSION"
 npm install -g "@earendil-works/pi-coding-agent@$PI_CODING_AGENT_VERSION" "pnpm@$PNPM_VERSION"
 
 mkdir -p "$HOME/.pi/agent"
-cp "$ROOT_DIR/config/pi/agent/settings.json" "$HOME/.pi/agent/settings.json"
+rsync -av "$ROOT_DIR/config/pi/agent/" "$HOME/.pi/agent/"
 
 cat <<EOF
 

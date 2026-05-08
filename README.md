@@ -7,6 +7,8 @@
 - Node/npm/pi 버전 pin: [`versions.env`](versions.env), [`.nvmrc`](.nvmrc)
 - Homebrew 의존성: [`Brewfile`](Brewfile)
 - pi 전역 설정: [`config/pi/agent/settings.json`](config/pi/agent/settings.json)
+- pi 기본 지침 및 Git convention: [`config/pi/agent/AGENTS.md`](config/pi/agent/AGENTS.md)
+- pi prompt templates: [`config/pi/agent/prompts/`](config/pi/agent/prompts/)
 - 설치 스크립트: [`scripts/install.sh`](scripts/install.sh)
 - 현재 pi 설정 백업 스크립트: [`scripts/backup-pi.sh`](scripts/backup-pi.sh)
 - 환경 점검 스크립트: [`scripts/check.sh`](scripts/check.sh)
@@ -18,6 +20,15 @@
 - `~/.pi/agent/auth.json` — OAuth/API 인증 정보
 - `~/.pi/agent/sessions/` — 대화/session 로그
 - `~/.pi/agent/bin`, `git`, `npm` — 생성/설치 artifact
+
+## 기본 Git convention
+
+모든 pi 작업에서 `~/.pi/agent/AGENTS.md`에 저장된 Git convention을 기본으로 사용합니다.
+
+- Commit: `<type>(<scope>): <subject>`
+- PR title: `<type>(<scope>): <subject> [Ticket Number]`
+- 기본 merge strategy: Squash & Merge
+- Review comment prefix: `P1`–`P5`
 
 ## 새 Mac에서 복구하기
 
