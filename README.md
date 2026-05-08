@@ -7,7 +7,8 @@
 - Node/npm/pi 버전 pin: [`versions.env`](versions.env), [`.nvmrc`](.nvmrc)
 - Homebrew 의존성: [`Brewfile`](Brewfile)
 - pi 전역 설정: [`config/pi/agent/settings.json`](config/pi/agent/settings.json)
-- pi 기본 지침 및 Git convention: [`config/pi/agent/AGENTS.md`](config/pi/agent/AGENTS.md)
+- pi 기본 지침: [`config/pi/agent/AGENTS.md`](config/pi/agent/AGENTS.md)
+- Git convention: [`config/pi/agent/docs/git-convention.md`](config/pi/agent/docs/git-convention.md)
 - pi prompt templates: [`config/pi/agent/prompts/`](config/pi/agent/prompts/)
 - 설치 스크립트: [`scripts/install.sh`](scripts/install.sh)
 - 현재 pi 설정 백업 스크립트: [`scripts/backup-pi.sh`](scripts/backup-pi.sh)
@@ -23,7 +24,7 @@
 
 ## 기본 Git convention
 
-모든 pi 작업에서 `~/.pi/agent/AGENTS.md`에 저장된 Git convention을 기본으로 사용합니다.
+모든 pi 작업에서 `~/.pi/agent/AGENTS.md`가 `~/.pi/agent/docs/git-convention.md`를 참조하도록 구성했습니다.
 
 - Commit: `<type>(<scope>): <subject>`
 - PR title: `<type>(<scope>): <subject> [Ticket Number]`
