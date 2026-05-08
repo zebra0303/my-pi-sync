@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# pi secrets / volatile data: never commit these
+auth.json
+sessions/
+bin/
+git/
+npm/
+*.jsonl
+
+# local logs / scratch
+*.log
+.tmp/

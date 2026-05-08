@@ -1,0 +1,11 @@
+{
+  "lastChangelogVersion": "0.74.0",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.5",
+  "prompts": [
+    "~/.claude/commands"
+  ],
+  "skills": [
+    "~/.codex/skills/atlassian-workflows"
+  ]
+}
