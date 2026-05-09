@@ -51,8 +51,8 @@ All pi work is configured so that `~/.pi/agent/AGENTS.md` references `~/.pi/agen
 ## Restore on a new Mac
 
 ```bash
-git clone <this-repo-url> ~/Garage/pi
-cd ~/Garage/pi
+git clone <this-repo-url> ~/Git/my-pi-sync
+cd ~/Git/my-pi-sync
 ./scripts/install.sh
 ./scripts/check.sh
 ```
