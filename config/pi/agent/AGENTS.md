@@ -11,6 +11,7 @@
 ### Personal
 
 - The user is a frontend developer working primarily with TypeScript and React.
+- The user uses Nx as the monorepo tool and MUI as the primary UI library.
 - The user also serves as a team lead, so recommendations should consider team-level maintainability, reviewability, and long-term ownership.
 
 ## Code Quality
@@ -26,7 +27,10 @@
 
 ## Frontend
 
-- Follow Atomic Design principles.
+- Use Feature-Sliced Design for frontend architecture and dependency boundaries: https://fsd.how/docs/get-started/overview/
+- Use Atomic Design as a UI component composition guideline, especially within `shared/ui` and local `ui` folders.
+- Prefer Nx-aware workflows for affected lint, test, and build checks in monorepos.
+- For MUI, prioritize accessible role/name semantics, keyboard interaction, focus management, and theme consistency.
 - UI components must not include business logic.
 
 ## Review Rules
