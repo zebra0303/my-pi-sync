@@ -7,5 +7,6 @@
   ],
   "skills": [
     "~/.codex/skills/atlassian-workflows"
-  ]
+  ],
+  "defaultThinkingLevel": "medium"
 }

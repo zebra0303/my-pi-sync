@@ -57,7 +57,7 @@ pi 설정을 바꾼 뒤 repo에 반영하려면:
 ./scripts/backup-pi.sh
 git status
 git add .nvmrc Brewfile config versions.env scripts README.md .gitignore
-git commit -m "Update pi environment"
+git commit -m "chore(agent): update pi environment"
 ```
 
 ## 환경 점검
