@@ -40,11 +40,11 @@ Base branch argument: `$1`
 
 ## Output
 
-Respond in Korean unless the user asks otherwise.
+Respond in the user's language unless they ask otherwise.
 
 Include:
 
-1. 실행한 명령
-2. 결과 요약
-3. 실패 시 원인 후보와 권장 수정 방향
-4. 다음 검증 명령
+1. Commands executed
+2. Result summary
+3. Failure cause candidates and recommended fix direction
+4. Next validation commands

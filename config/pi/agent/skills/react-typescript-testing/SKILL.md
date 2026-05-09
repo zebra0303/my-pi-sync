@@ -45,12 +45,12 @@ Write or improve tests for changed code, a specified file, component, hook, util
 
 ## Output
 
-After making changes, summarize in Korean unless the user requests another language:
+After making changes, summarize in the user's language unless they request another language:
 
-1. 추가/수정한 테스트
-2. 검증한 시나리오
-3. 실행한 테스트 명령과 결과
-4. 남은 리스크 또는 후속 제안
+1. Added or updated tests
+2. Verified scenarios
+3. Test commands executed and results
+4. Remaining risks or follow-up suggestions
 
 ## Rules
 

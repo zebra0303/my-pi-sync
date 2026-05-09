@@ -52,13 +52,13 @@ For frontend / React / TypeScript, check:
 
 ## Output
 
-Write the review in Korean unless the user requests another language.
+Write the review in the user's language unless they request another language.
 
 Use this structure:
 
-1. 주요 발견 사항
-2. 확인 필요 사항
-3. 테스트/검증 제안
+1. Key findings
+2. Needs verification
+3. Test and validation suggestions
 
 For each issue include:
 
@@ -77,10 +77,10 @@ Priority guide:
 - `P4`: optional suggestion
 - `P5`: minor comment
 
-If there are no meaningful issues, say `발견된 주요 이슈 없음` and briefly mention remaining test gaps or manual checks.
+If there are no meaningful issues, say `No major issues found` and briefly mention remaining test gaps or manual checks.
 
 ## Rules
 
 - Do not modify code unless the user explicitly asks for fixes.
-- Do not make unsupported claims. Mark uncertain findings as `확인 필요`.
+- Do not make unsupported claims. Mark uncertain findings as `needs verification`.
 - Prefer high-signal findings over long summaries.

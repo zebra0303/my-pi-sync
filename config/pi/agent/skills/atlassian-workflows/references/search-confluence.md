@@ -1,38 +1,42 @@
-Confluence에서 문서를 검색합니다.
+Search Confluence pages.
 
 ## Input
 
-사용자가 검색 키워드를 전달합니다. `$ARGUMENTS`는 pi prompt template에서 전달된 인자 또는 사용자의 현재 요청에서 받은 인자로 해석합니다.
+The user provides search keywords. `$ARGUMENTS` means arguments passed through the pi prompt template or the user's current request.
 
-키워드가 전달되지 않은 경우 사용자에게 검색어를 요청하세요.
+If no keyword is provided, ask the user for a search query.
 
-## 동작 방식
+## Workflow
 
-### 1. 검색 실행
+### 1. Run search
 
 ```bash
 confluence search "<KEYWORD>" --limit 10
 ```
 
-특정 Space로 제한하고 싶다면 CQL을 사용합니다:
+To limit the search to a specific space, use CQL:
 
 ```bash
 confluence search "type=page AND space=<SPACE_KEY> AND text~\"<KEYWORD>\"" --limit 10
 ```
 
-### 2. 결과 출력
+### 2. Present results
 
-검색 결과를 정리하여 보여주세요.
+Summarize and present the search results clearly.
 
-### 3. 후속 작업 안내
+### 3. Follow-up guidance
 
-결과를 보여준 뒤, 특정 문서를 읽고 싶으면 `/read-confluence <URL 또는 ID>`를 사용하라고 안내합니다.
+After showing results, tell the user they can read a specific page with:
 
-### 4. 환경변수 미설정 시
+```text
+/read-confluence <URL or ID>
+```
 
-`confluence` 명령어가 실패하면 아래 안내를 출력합니다:
+### 4. Missing environment variables
 
-> Confluence 환경변수가 설정되지 않았습니다. `~/.zshrc`에 아래 내용을 추가하세요:
+If the `confluence` command fails because credentials or environment variables are missing, show this guidance:
+
+> Confluence environment variables are not configured. Add the following to `~/.zshrc`:
 >
 > ```sh
 > export CONFLUENCE_DOMAIN="lunit.atlassian.net"
@@ -42,4 +46,4 @@ confluence search "type=page AND space=<SPACE_KEY> AND text~\"<KEYWORD>\"" --lim
 > export CONFLUENCE_API_TOKEN="your-api-token"
 > ```
 >
-> API 토큰은 https://id.atlassian.com/manage-profile/security/api-tokens 에서 생성할 수 있습니다.
+> You can create an API token at https://id.atlassian.com/manage-profile/security/api-tokens.

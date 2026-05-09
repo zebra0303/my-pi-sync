@@ -165,14 +165,14 @@ ${
 
 ## Output format
 
-Respond in Korean unless the user asks otherwise.
+Respond in the user's language unless they ask otherwise.
 
-1. 주요 발견 사항
-2. 확인 필요 사항
-3. 테스트/검증 제안
+1. Key findings
+2. Needs verification
+3. Test and validation suggestions
 
 For each issue include P1-P5 priority, severity, file/location, failure scenario, and recommended fix direction.
-If there are no major findings, say "발견된 주요 이슈 없음".`;
+If there are no major findings, say "No major issues found".`;
 }
 
 export default function (pi: ExtensionAPI) {
