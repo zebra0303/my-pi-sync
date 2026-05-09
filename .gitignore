@@ -9,6 +9,9 @@ git/
 npm/
 *.jsonl
 
+# Node
+node_modules/
+
 # local logs / scratch
 *.log
 .tmp/

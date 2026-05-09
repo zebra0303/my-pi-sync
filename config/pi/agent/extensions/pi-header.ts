@@ -36,7 +36,7 @@ export default function (pi: ExtensionAPI) {
   pi.on('session_start', async (_event, ctx) => {
     if (!ctx.hasUI) return;
 
-    ctx.ui.setHeader((_tui, theme) => ({
+    ctx.ui.setHeader(() => ({
       render(width: number): string[] {
         const logo = LOGO.map((line) => truncateToWidth(center(color(line), width), width, ''));
 
