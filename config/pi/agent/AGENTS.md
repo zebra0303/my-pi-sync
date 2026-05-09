@@ -31,6 +31,7 @@
 - Use Atomic Design as a UI component composition guideline, especially within `shared/ui` and local `ui` folders.
 - Prefer Nx-aware workflows for affected lint, test, and build checks in monorepos.
 - For MUI, prioritize accessible role/name semantics, keyboard interaction, focus management, and theme consistency.
+- For XE frontend architecture, follow the `xe-frontend-architecture` skill: FSD layers, ky/zod/react-query API pattern, RHF+Zod form hooks, overlay-kit dialogs, nuqs URL sync with sanitization, and i18n/XSS safety rules.
 - UI components must not include business logic.
 
 ## Review Rules

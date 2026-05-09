@@ -27,7 +27,11 @@ for path in \
   "$HOME/.pi/agent/prompts/spike-report.md" \
   "$HOME/.pi/agent/prompts/sync-dev-task.md" \
   "$HOME/.pi/agent/prompts/md-to-adf.md" \
+  "$HOME/.pi/agent/prompts/frontend-architecture-review.md" \
+  "$HOME/.pi/agent/prompts/frontend-generate-plan.md" \
+  "$HOME/.pi/agent/prompts/fsd-check.md" \
   "$HOME/.pi/agent/skills/atlassian-workflows/SKILL.md" \
+  "$HOME/.pi/agent/skills/xe-frontend-architecture/SKILL.md" \
   "$HOME/.pi/agent/skills/atlassian-workflows/scripts/md-to-adf.py"
 do
   if [[ -e "$path" ]]; then
