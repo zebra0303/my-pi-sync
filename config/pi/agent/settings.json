@@ -4,7 +4,10 @@
   "defaultModel": "gpt-5.5",
   "defaultThinkingLevel": "medium",
   "packages": [
-    "git:github.com/otahontas/pi-coding-agent-catppuccin"
+    {
+      "source": "git:github.com/otahontas/pi-coding-agent-catppuccin",
+      "themes": []
+    }
   ],
   "theme": "catppuccin-mocha"
 }

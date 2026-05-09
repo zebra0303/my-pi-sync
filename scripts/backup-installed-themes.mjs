@@ -101,10 +101,6 @@ function sourceFromEntry(entry) {
   }
 
   if (entry && typeof entry === 'object' && typeof entry.source === 'string') {
-    if (Array.isArray(entry.themes) && entry.themes.length === 0) {
-      return undefined;
-    }
-
     return entry.source;
   }
 

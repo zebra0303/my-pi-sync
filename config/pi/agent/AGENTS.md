@@ -11,7 +11,6 @@
 - Always identify and state what information is lacking before proceeding.
 - State the conclusion in a single line first, then explain the reasoning.
 
-
 ### Personal
 
 - The user is a frontend developer working primarily with TypeScript and React.
@@ -31,12 +30,15 @@
 
 ## Frontend
 
-- Use Feature-Sliced Design for frontend architecture and dependency boundaries: https://fsd.how/docs/get-started/overview/
+- Use [Feature-Sliced Design][fsd] for frontend architecture and dependency
+  boundaries.
 - Use Atomic Design as a UI component composition guideline, especially within `shared/ui` and local `ui` folders.
 - Prefer Nx-aware workflows for affected lint, test, and build checks in monorepos.
 - For MUI, prioritize accessible role/name semantics, keyboard interaction, focus management, and theme consistency.
 - For XE frontend architecture, follow the `xe-frontend-architecture` skill: FSD layers, ky/zod/react-query API pattern, RHF+Zod form hooks, overlay-kit dialogs, nuqs URL sync with sanitization, and i18n/XSS safety rules.
 - UI components must not include business logic.
+
+[fsd]: https://fsd.how/docs/get-started/overview/
 
 ## Review Rules
 
