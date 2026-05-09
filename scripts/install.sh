@@ -55,7 +55,5 @@ Done.
 Next steps:
 1. Start pi: pi
 2. Login again with /login (auth.json is intentionally not stored in git).
-3. If you use referenced resources, restore/create them separately:
-   - ~/.claude/commands
-   - ~/.codex/skills/atlassian-workflows
+3. Use /reload in an existing pi session to reload prompts, skills, extensions, and themes.
 EOF

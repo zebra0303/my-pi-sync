@@ -1,0 +1,3 @@
+display_name: Atlassian Workflows
+short_description: Read/search Confluence, create Jira spike reports, and sync DevTasks.
+default_prompt: Use this skill for Confluence read/search, Jira spike reports, DevTask sync, and Markdown to ADF conversion.

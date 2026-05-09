@@ -22,8 +22,13 @@ check_version "pi" "$PI_CODING_AGENT_VERSION" "$(npm list -g --depth=0 @earendil
 
 for path in \
   "$HOME/.pi/agent/settings.json" \
-  "$HOME/.claude/commands" \
-  "$HOME/.codex/skills/atlassian-workflows"
+  "$HOME/.pi/agent/prompts/read-confluence.md" \
+  "$HOME/.pi/agent/prompts/search-confluence.md" \
+  "$HOME/.pi/agent/prompts/spike-report.md" \
+  "$HOME/.pi/agent/prompts/sync-dev-task.md" \
+  "$HOME/.pi/agent/prompts/md-to-adf.md" \
+  "$HOME/.pi/agent/skills/atlassian-workflows/SKILL.md" \
+  "$HOME/.pi/agent/skills/atlassian-workflows/scripts/md-to-adf.py"
 do
   if [[ -e "$path" ]]; then
     echo "OK: $path"

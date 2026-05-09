@@ -10,6 +10,7 @@
 - pi 기본 지침: [`config/pi/agent/AGENTS.md`](config/pi/agent/AGENTS.md)
 - Git convention: [`config/pi/agent/docs/git-convention.md`](config/pi/agent/docs/git-convention.md)
 - pi prompt templates: [`config/pi/agent/prompts/`](config/pi/agent/prompts/)
+- pi skills: [`config/pi/agent/skills/`](config/pi/agent/skills/)
 - 설치 스크립트: [`scripts/install.sh`](scripts/install.sh)
 - 현재 pi 설정 백업 스크립트: [`scripts/backup-pi.sh`](scripts/backup-pi.sh)
 - 환경 점검 스크립트: [`scripts/check.sh`](scripts/check.sh)
@@ -74,9 +75,10 @@ git commit -m "chore(agent): update pi environment"
 - `@earendil-works/pi-coding-agent` `0.74.0`
 - pnpm `11.0.8`
 
-## 별도 관리가 필요한 참조 리소스
+## Claude/Codex workflow migration
 
-현재 pi 설정은 아래 경로를 참조합니다. 이 repo에는 아직 내용물을 포함하지 않았으므로, 필요하면 별도 repo/submodule 또는 추가 백업 대상으로 관리하세요.
+기존에 `~/.claude/commands`와 `~/.codex/skills/atlassian-workflows`에서 쓰던 Atlassian workflow는 pi prompt template과 skill로 이 repo에 포함되어 있습니다.
 
-- `~/.claude/commands`
-- `~/.codex/skills/atlassian-workflows`
+- Prompt templates: `read-confluence`, `search-confluence`, `spike-report`, `sync-dev-task`, `md-to-adf`
+- Skill: `atlassian-workflows`
+- Script: `config/pi/agent/skills/atlassian-workflows/scripts/md-to-adf.py`
