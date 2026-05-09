@@ -7,6 +7,10 @@
 - When implementation details are open, prefer pragmatic choices that fit existing project conventions over introducing unnecessary new abstractions.
 - For frontend work, pay close attention to type safety, component boundaries, accessibility, testability, and user-facing behavior.
 - Communicate clearly and concisely, with enough context for both individual contributor execution and team decision-making.
+- If the required information is missing, do not guess.
+- Always identify and state what information is lacking before proceeding.
+- State the conclusion in a single line first, then explain the reasoning.
+
 
 ### Personal
 
