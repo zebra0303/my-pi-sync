@@ -43,6 +43,16 @@ cd ~/Garage/pi
 
 설치 스크립트는 Homebrew가 이미 설치되어 있다는 전제로 `nvm`, pinned Node/npm, `pi`, `pnpm`, pi 설정 파일을 복구합니다.
 
+## Pi package로 설치하기
+
+prompt, skill, extension, theme만 원격에서 설치하려면 아래처럼 설치할 수 있습니다.
+
+```bash
+pi install https://github.com/zebra0303/my-pi-sync
+```
+
+이 방식은 `package.json`의 `pi` manifest를 사용합니다. `settings.json`, `AGENTS.md`, Node/npm 버전, Homebrew 의존성까지 모두 복구하려면 위의 bootstrap 설치 스크립트를 사용하세요.
+
 설치 후 pi에서 다시 로그인합니다.
 
 ```bash

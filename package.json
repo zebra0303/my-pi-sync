@@ -1,0 +1,22 @@
+{
+  "name": "my-pi-sync",
+  "version": "0.1.0",
+  "private": true,
+  "keywords": [
+    "pi-package"
+  ],
+  "pi": {
+    "extensions": [
+      "./config/pi/agent/extensions"
+    ],
+    "skills": [
+      "./config/pi/agent/skills"
+    ],
+    "prompts": [
+      "./config/pi/agent/prompts"
+    ],
+    "themes": [
+      "./config/pi/agent/themes"
+    ]
+  }
+}
