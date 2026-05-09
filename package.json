@@ -32,6 +32,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "test": "node --test scripts/*.test.mjs",
     "prepare": "command -v husky >/dev/null 2>&1 && husky || true"
   },
   "packageManager": "pnpm@11.0.8"

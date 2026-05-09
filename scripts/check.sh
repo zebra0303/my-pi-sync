@@ -32,7 +32,8 @@ for path in \
   "$HOME/.pi/agent/prompts/fsd-check.md" \
   "$HOME/.pi/agent/skills/atlassian-workflows/SKILL.md" \
   "$HOME/.pi/agent/skills/xe-frontend-architecture/SKILL.md" \
-  "$HOME/.pi/agent/skills/atlassian-workflows/scripts/md-to-adf.py"
+  "$HOME/.pi/agent/skills/atlassian-workflows/scripts/md-to-adf.py" \
+  "$HOME/.pi/agent/themes/catppuccin-mocha.json"
 do
   if [[ -e "$path" ]]; then
     echo "OK: $path"

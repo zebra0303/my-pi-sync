@@ -27,6 +27,7 @@ This is a personal bootstrap repository for quickly reproducing the same pi envi
 - Git convention: [`config/pi/agent/docs/git-convention.md`](config/pi/agent/docs/git-convention.md)
 - pi prompt templates: [`config/pi/agent/prompts/`](config/pi/agent/prompts/)
 - pi skills: [`config/pi/agent/skills/`](config/pi/agent/skills/)
+- pi themes, including materialized package-installed themes: [`config/pi/agent/themes/`](config/pi/agent/themes/)
 - Install script: [`scripts/install.sh`](scripts/install.sh)
 - Current pi configuration backup script: [`scripts/backup-pi.sh`](scripts/backup-pi.sh)
 - Environment check script: [`scripts/check.sh`](scripts/check.sh)
@@ -78,7 +79,7 @@ pi
 
 ## Back up the current environment
 
-After changing pi configuration, back it up into this repository:
+After changing pi configuration, back it up into this repository. The backup script copies stable global config and also materializes theme JSON files from installed pi packages into `config/pi/agent/themes/`.
 
 ```bash
 ./scripts/backup-pi.sh

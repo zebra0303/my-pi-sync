@@ -24,4 +24,13 @@ rsync -av \
   --exclude 'npm/' \
   "$SRC/" "$DST/"
 
+# Materialize theme JSON files from installed pi packages. Package sources are
+# still kept in settings.json, but this keeps the selected theme restorable even
+# if the remote package is temporarily unavailable.
+if command -v node >/dev/null 2>&1; then
+  node "$ROOT_DIR/scripts/backup-installed-themes.mjs" "$SRC" "$DST"
+else
+  echo "Skipping installed package theme backup because node is not available" >&2
+fi
+
 echo "Backed up non-secret pi config to $DST"
