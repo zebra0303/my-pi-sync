@@ -3,6 +3,11 @@
 ## General
 
 - Every code change must have a clear intent.
+- This repository requires a review-first workflow: `[PLAN]` → human approval → `[IMPLEMENTATION]` → `[REVIEW]`.
+- Plans must be written before implementation and include architecture impact, backward compatibility, test strategy, and rollout/rollback considerations when applicable.
+- Do not modify files without plan approval.
+- If a plan was skipped, stop and produce one before continuing.
+- If implementation started too early, acknowledge it, correct course, and return to the required workflow.
 - Do not guess; leave evidence in code or documentation.
 - When implementation details are open, prefer pragmatic choices that fit existing project conventions over introducing unnecessary new abstractions.
 - For frontend work, pay close attention to type safety, component boundaries, accessibility, testability, and user-facing behavior.
@@ -27,6 +32,7 @@
 
 - Add or update tests whenever logic changes.
 - Changes without tests are considered risky.
+- Planning must include a test strategy, even when the strategy is to skip automated tests for a documented reason.
 
 ## Frontend
 
@@ -43,6 +49,9 @@
 ## Review Rules
 
 - Use these rules as the basis for PR reviews.
+- After implementation, summarize what changed.
+- Highlight any deviations from the original plan.
+- Call out known limitations.
 
 ## Git Convention
 
