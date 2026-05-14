@@ -82,6 +82,14 @@ If verification is not possible from the available information, mark the package
 
 Prefer built-in platform/tooling capabilities and existing project conventions over adding new dependencies.
 
+## Persistent review notes
+
+When the user asks to preserve a review for future reference, recommend storing it in the repository under `Docs/.dev/<TICKET>-review.md` when the notes are engineering-facing and should be versioned but are not polished product documentation. Use `Docs/reviews/<TICKET>.md` only when the user wants official/public review documentation.
+
+Before writing a persistent review note, derive the ticket key from the branch name, prompt arguments, or user request when possible (for example, `LHVE-164`). If no ticket key is available, ask the user or use a descriptive filename such as `current-branch-review.md`.
+
+Future reviews should check `Docs/.dev/*-review.md` for relevant prior findings when the branch, ticket key, or topic matches the current review.
+
 ## Output
 
 Write the review in the user's language unless they request another language.

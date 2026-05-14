@@ -129,7 +129,17 @@ Based on the Jira issue requirements, perform a thorough investigation of the co
 
 ### Step 3: Generate the Spike Report
 
-Create a Markdown file at `Docs/<TICKET_NUMBER>-spike-report.md` AND a Korean version at `Docs/<TICKET_NUMBER>-spike-report-ko.md`.
+Create persistent spike report notes under the repository's development notes directory:
+
+- English: `Docs/.dev/<TICKET_NUMBER>-spike.md`
+- Korean: `Docs/.dev/<TICKET_NUMBER>-spike.ko.md`
+
+If the repository does not have a `Docs` directory, create the equivalent local development notes directory at `.dev/` and use:
+
+- English: `.dev/<TICKET_NUMBER>-spike.md`
+- Korean: `.dev/<TICKET_NUMBER>-spike.ko.md`
+
+Prefer `Docs/.dev` when available because these notes are team-visible, versioned engineering artifacts, but not polished product documentation.
 
 **The report structure should be adapted to the ticket's nature.** Use the following template as a guide, but include/exclude sections based on relevance:
 
@@ -334,7 +344,7 @@ acli jira workitem create \
   --type Subtask \
   --parent <STORY_TICKET> \
   --summary "[Spike Report] <STORY_SUMMARY>" \
-  --description @Docs/<TICKET_NUMBER>-spike-report.md
+  --description @Docs/.dev/<TICKET_NUMBER>-spike.md
 ```
 
 ### Step 5: Publish to Confluence (Optional)
@@ -344,7 +354,7 @@ Ask the user if they want to publish the report to Confluence:
 ```bash
 # Create a Confluence page under the team's spike reports space
 confluence create-child "<TICKET_NUMBER> Spike Report" <PARENT_PAGE_ID> \
-  --file Docs/<TICKET_NUMBER>-spike-report.md \
+  --file Docs/.dev/<TICKET_NUMBER>-spike.md \
   --format markdown
 ```
 
