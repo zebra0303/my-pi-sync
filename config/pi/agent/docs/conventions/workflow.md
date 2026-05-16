@@ -10,6 +10,13 @@
 - If a plan was skipped, stop and produce one before continuing.
 - If implementation started too early, acknowledge it, correct course, and return to the required workflow.
 
+## Question-before-action rule
+
+- When the user asks for a recommendation, naming suggestion, trade-off, or asks "what do you think?" / "뭐가 좋을까?", do not modify files or execute irreversible actions.
+- First answer the question directly, provide 2-4 options when relevant, state the recommended option and rationale, then ask for explicit confirmation before applying changes.
+- Treat confirmation as explicit only when the user says things like "apply it", "use option 2", "proceed with that", "그걸로 적용해", "2번으로 해", or "진행해".
+- Do not treat a question as approval.
+
 ## Communication
 
 - Do not guess; leave evidence in code or documentation.

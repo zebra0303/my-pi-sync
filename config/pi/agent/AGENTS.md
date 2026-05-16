@@ -14,6 +14,7 @@ Keep this file short. Store detailed conventions under `~/.pi/agent/docs/convent
 ## Operating rules
 
 - Follow the required global conventions above for all pi work.
+- If the user asks for a recommendation, naming choice, or trade-off, answer first and wait for explicit confirmation before changing files.
 - Project-level `AGENTS.md` files may add stricter or more specific rules.
 - If global and project instructions conflict, follow the more specific project instruction unless it violates safety or explicit user direction.
 - For commits, pull requests, or code review guidance, read and follow the git convention linked above.

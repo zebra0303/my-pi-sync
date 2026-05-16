@@ -135,9 +135,31 @@ If the user explicitly asks to continue through a gate, record that in the progr
 ### Phase 3: Branch and workspace safety
 
 - Ensure working tree state is understood.
-- If creating a branch is needed, sync base branch first.
-- Do not discard user changes.
-- Record branch/worktree decisions in progress.
+- Implementation work MUST be done in a dedicated git worktree, not directly in the root worktree, unless the user explicitly opts out.
+- Create the worktree under the root repository's `.worktree/` directory:
+
+  ```text
+  <repo-root>/.worktree/<branch-name>
+  ```
+
+- The branch name MUST use this format:
+
+  ```text
+  <TICKET>-<title-slug>
+  ```
+
+  Examples:
+
+  ```text
+  LHVE-183-nx-consider-migrating-from-servetargetname-to-devtargetname-in-nx-vite-configuration
+  LHVE-164-add-monitoring-dashboard-shell
+  ```
+
+- Build `<title-slug>` from the Jira summary/title by lowercasing, converting non-alphanumeric runs to `-`, trimming leading/trailing `-`, and keeping it concise enough for practical shell use while preserving the ticket meaning.
+- Before creating the worktree, sync/confirm the intended base branch and do not discard user changes.
+- If `.worktree/` is not ignored, add it to local git excludes (`.git/info/exclude`) rather than modifying tracked ignore files unless the user asks.
+- If the required branch or worktree already exists, inspect it and resume there instead of recreating it.
+- Record branch/worktree path decisions in progress.
 
 ### Phase 4: Code generation
 

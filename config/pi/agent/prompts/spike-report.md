@@ -1,5 +1,5 @@
 ---
-description: Generate Jira spike investigation report from an Epic, Story, or DevTask
+description: Generate a Jira spike investigation report
 argument-hint: "<ticket-key> [repo-path ...]"
 ---
 

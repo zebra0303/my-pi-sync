@@ -1,11 +1,9 @@
 ---
-description: Convert Markdown to Atlassian Document Format JSON for Jira or Confluence updates
+description: Convert Markdown to Atlassian Document Format JSON
 argument-hint: "<markdown-file-or-text>"
 ---
 
 Use the `atlassian-workflows` skill.
-Use the bundled script at `~/.pi/agent/skills/atlassian-workflows/scripts/md-to-adf.py` to convert Markdown to Atlassian Document Format JSON.
+Convert the provided Markdown file or text with the bundled `scripts/md-to-adf.py` converter.
 
 Arguments: $ARGUMENTS
-
-If the argument is a file path, convert that file. Otherwise, treat the arguments as Markdown text and use the script's `--text` option.

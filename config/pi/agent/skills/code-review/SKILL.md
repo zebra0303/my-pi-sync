@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Review git branch, staged changes, or a specified base branch for defects. Use when the user invokes /review or asks for code review, PR review, staged diff review, or frontend/React/TypeScript risk analysis.
+description: Review git branch, staged changes, or a specified base branch for defects. Use when the user invokes /review or asks for general code review, PR review, or staged diff review. For XE frontend architecture-specific review, prefer the xe-frontend-architecture skill.
 ---
 
 # Code Review
