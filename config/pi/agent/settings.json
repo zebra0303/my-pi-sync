@@ -1,13 +1,14 @@
 {
-  "lastChangelogVersion": "0.74.0",
-  "defaultProvider": "openai",
   "defaultModel": "gpt-5.5",
+  "defaultProvider": "openai",
   "defaultThinkingLevel": "medium",
+  "lastChangelogVersion": "0.75.4",
   "packages": [
     {
       "source": "git:github.com/otahontas/pi-coding-agent-catppuccin",
       "themes": []
-    }
+    },
+    "npm:@ollama/pi-web-search"
   ],
   "theme": "catppuccin-mocha"
 }
