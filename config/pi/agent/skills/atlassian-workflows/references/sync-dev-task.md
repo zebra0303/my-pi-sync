@@ -384,23 +384,43 @@ curl -s -X PUT \
 
 ## Phase 2: Implementation Subtask management, optional
 
-This phase manages lower-level implementation Subtasks under each Sub-task(Dev)/DevTask. Do not confuse these with the Story-level Sub-task(Dev) work items created in Phase 0.
+This phase manages lower-level implementation work items/checklists for each Sub-task(Dev)/DevTask. Do not confuse these with the Story-level Sub-task(Dev) work items created in Phase 0.
+
+### Jira hierarchy constraint for implementation Subtasks
+
+Before creating implementation Subtasks, inspect the current development work item:
+
+```bash
+acli jira workitem view "<DEV_TASK_KEY>" --fields "issuetype,summary,parent" --json
+```
+
+If `fields.issuetype.subtask == true`, the work item is already a Jira subtask, such as `Sub-task(Dev)`. Jira does **not** allow creating subtasks under subtasks. In this case:
+
+- Do **NOT** attempt `acli jira workitem create --parent <SUB_TASK_DEV_KEY> --type Sub-task`.
+- Represent implementation subtasks as a `## Implementation Subtasks` checklist inside the development work item Description.
+- Use Markdown task list syntax (`- [ ] ...`) and convert to ADF with `md-to-adf.py`; the converter emits Jira `taskList` / `taskItem` nodes.
+- Ask for confirmation before updating the Description.
+
+Only create Jira child Subtasks when the development work item is not itself a subtask (`fields.issuetype.subtask == false`) and Jira supports that parent/child relationship.
+
+If a Jira create attempt fails with an error like `can not be sub-task`, stop retrying and switch to Description checklist mode after informing the user.
 
 ### Step 7: Ask the user
 
-Ask: `Do you want to create or update implementation Subtasks under each Sub-task(Dev) as well?`
+Ask: `Do you want to create or update implementation Subtasks/checklists for each development work item as well?`
 
 Options:
 
-- Yes: create missing implementation Subtasks and normalize existing ones
-- Format only: normalize existing implementation Subtask descriptions only
+- Yes: create missing implementation Subtasks only when the development work item can have child subtasks; otherwise add/update `## Implementation Subtasks` checklist in the Description
+- Checklist only: add/update `## Implementation Subtasks` checklist in the Description even if Jira child Subtasks would be possible
+- Format only: normalize existing implementation Subtask descriptions or existing Description checklist format only
 - No: stop after Description sync
 
-### Step 8: Analyze existing implementation Subtasks
+### Step 8: Analyze existing implementation Subtasks/checklist
 
-Check format and coverage.
+Check format and coverage. For `Sub-task(Dev)` work items, look for an existing `## Implementation Subtasks` checklist in the Description instead of child Jira Subtasks.
 
-### Step 9: Group missing implementation Subtasks
+### Step 9: Group missing implementation Subtasks/checklist items
 
 Grouping rules:
 
@@ -414,13 +434,18 @@ Grouping rules:
 
 ### Step 10: Preview
 
-Show implementation Subtasks that will be created or updated.
+Show implementation Subtasks or Description checklist items that will be created or updated.
+
+For `Sub-task(Dev)` items, preview the exact `## Implementation Subtasks` checklist block that will be inserted or replaced in the Description.
 
 ### Step 11: Execute
 
-After confirmation, create or update implementation Subtasks.
+After confirmation:
 
-Implementation Subtask format:
+- If the development work item can have child subtasks, create or update Jira implementation Subtasks.
+- If the development work item is already a subtask (`fields.issuetype.subtask == true`), update its Description with a `## Implementation Subtasks` checklist.
+
+Implementation Subtask format for Jira child Subtasks:
 
 ```markdown
 ## Scope
@@ -436,11 +461,19 @@ Rationale for estimate.
 - concrete test items
 ```
 
-Convert implementation Subtask descriptions to ADF before upload.
+Implementation checklist format for `Sub-task(Dev)` Description:
+
+```markdown
+## Implementation Subtasks
+- [ ] **[Impl] <task title>** — <scope summary>. Files: `<path>`, `<path>`.
+- [ ] **[Impl] <task title>** — <scope summary>. Tests: `<test file or command>`.
+```
+
+Convert Jira child Subtask descriptions and updated development work item descriptions to ADF before upload.
 
 ### Step 12: Summarize results
 
-Summarize created and updated items.
+Summarize created Jira child Subtasks, updated Jira child Subtasks, and/or updated Description checklist items.
 
 ## Phase 3: Conflict detection and work ordering
 
