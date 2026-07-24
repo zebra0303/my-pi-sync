@@ -1,8 +1,8 @@
 {
-  "defaultModel": "gpt-5.5",
+  "defaultModel": "gpt-5.6-sol",
   "defaultProvider": "openai-codex",
   "defaultThinkingLevel": "medium",
-  "lastChangelogVersion": "0.79.10",
+  "lastChangelogVersion": "0.81.1",
   "packages": [
     {
       "source": "git:github.com/otahontas/pi-coding-agent-catppuccin",

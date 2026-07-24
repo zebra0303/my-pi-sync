@@ -1,18 +1,19 @@
 {
   "providers": {
-    "lm-studio": {
-      "baseUrl": "http://localhost:1234/v1",
+    "ollama": {
       "api": "openai-completions",
-      "apiKey": "lm-studio",
+      "apiKey": "ollama",
+      "baseUrl": "http://127.0.0.1:11434/v1",
       "models": [
         {
-          "id": "gemma-4-26b-a4b-it",
-          "input": [ "text" ]
-        },
-        {
-          "id": "qwen/qwen3.6-35b-a3b",
-          "name": "Qwen 3.6 35B-A38 (local)",
-          "input": [ "text" ]
+          "_launch": true,
+          "contextWindow": 131072,
+          "id": "gemma4",
+          "input": [
+            "text",
+            "image"
+          ],
+          "reasoning": true
         }
       ]
     }

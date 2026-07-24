@@ -25,6 +25,15 @@
 - Communicate clearly and concisely, with enough context for individual contributor execution and team-level maintainability.
 - When implementation details are open, prefer pragmatic choices that fit existing project conventions over unnecessary abstractions.
 
+## Diagrams (Mermaid)
+
+When emitting Mermaid diagrams for terminal (ASCII) rendering:
+
+- Wrap every node and edge label in double quotes (`A["앱 로드"]`, `-->|"401"|`). Mandatory when a label contains `→`, `/`, or `()`.
+- Keep labels short; move long explanations to body prose or a legend below the diagram.
+- Manage graph width so it does not exceed the terminal columns — keep the flow vertical (`TD`) or split into multiple diagrams.
+- Korean labels are fine to use inline; the terminal renderer handles CJK (double-width) glyphs correctly.
+
 ## Complex task handling
 
 - For complex or high-risk tasks, break the work into small, reviewable steps.

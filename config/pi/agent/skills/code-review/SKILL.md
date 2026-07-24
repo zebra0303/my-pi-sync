@@ -92,9 +92,7 @@ Future reviews should check `Docs/.dev/*-review.md` for relevant prior findings 
 
 ## Output
 
-Write the review in English unless the user explicitly requests another language.
-
-Only the detailed A-to-Z explanation should be written in Korean. All other review content, including headings, summaries, issue metadata, problems, concise review comments, reproduction/failure scenarios, recommended fix directions, strengths, verification notes, and test suggestions, should be written in English by default unless the user explicitly requests a different language format.
+Write the review in the user's language unless they request another language.
 
 Use this structure:
 
@@ -114,8 +112,7 @@ For each issue include:
 - Severity: `Critical` / `High` / `Medium` / `Low`
 - File/function/location
 - Problem
-- Review comment: concise, directly actionable, and written in English
-- A-to-Z explanation of the logic, written in Korean only:
+- A-to-Z explanation of the logic:
   - What the current code does step by step
   - Why that behavior becomes incorrect or risky
   - Which condition, input, state, or timing triggers the failure
