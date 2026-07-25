@@ -44,8 +44,49 @@ nvm install "$NODE_VERSION"
 nvm alias default "$NODE_VERSION"
 nvm use "$NODE_VERSION"
 
-npm install -g "npm@$NPM_VERSION"
-npm install -g "@earendil-works/pi-coding-agent@$PI_CODING_AGENT_VERSION" "pnpm@$PNPM_VERSION"
+# npm refuses to overwrite a global bin it does not own, so a package installed
+# by another tool fails with EEXIST. Node ships corepack, and corepack owns
+# bin/pnpm, which is exactly that situation. Skip whatever already matches the
+# pin, and let corepack manage pnpm when it is present.
+npm_global_version() {
+  npm ls -g --depth=0 "$1" 2>/dev/null |
+    awk -v p="$1@" '{ i = index($0, p); if (i) { print substr($0, i + length(p)); exit } }'
+}
+
+install_npm_global() {
+  local pkg="$1"
+  local want="$2"
+
+  if [[ "$(npm_global_version "$pkg")" == "$want" ]]; then
+    echo "$pkg@$want already installed"
+    return 0
+  fi
+
+  npm install -g "$pkg@$want"
+}
+
+install_pnpm() {
+  local want="$1"
+
+  if [[ "$(pnpm -v 2>/dev/null || true)" == "$want" ]]; then
+    echo "pnpm@$want already active"
+    return 0
+  fi
+
+  if command -v corepack >/dev/null 2>&1; then
+    corepack prepare "pnpm@$want" --activate
+    if ! command -v pnpm >/dev/null 2>&1; then
+      corepack enable pnpm
+    fi
+    return 0
+  fi
+
+  install_npm_global pnpm "$want"
+}
+
+install_npm_global npm "$NPM_VERSION"
+install_npm_global @earendil-works/pi-coding-agent "$PI_CODING_AGENT_VERSION"
+install_pnpm "$PNPM_VERSION"
 
 mkdir -p "$HOME/.pi/agent"
 rsync -av "$ROOT_DIR/config/pi/agent/" "$HOME/.pi/agent/"
