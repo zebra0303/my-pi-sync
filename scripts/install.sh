@@ -3,6 +3,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/versions.env"
+# shellcheck source=scripts/omp-manifest.sh
+source "$ROOT_DIR/scripts/omp-manifest.sh"
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "This bootstrap script is currently written for macOS." >&2
@@ -48,6 +50,32 @@ npm install -g "@earendil-works/pi-coding-agent@$PI_CODING_AGENT_VERSION" "pnpm@
 mkdir -p "$HOME/.pi/agent"
 rsync -av "$ROOT_DIR/config/pi/agent/" "$HOME/.pi/agent/"
 
+# omp (oh-my-pi) is distributed via Homebrew, not npm.
+if ! command -v omp >/dev/null 2>&1; then
+  brew install can1357/tap/omp
+fi
+
+# Restore the allowlisted omp config. Nothing is deleted in ~/.omp: local skills
+# or themes that are not tracked here survive the restore.
+OMP_DST="$(omp_config_root)"
+OMP_SRC="$ROOT_DIR/config/omp"
+
+if [[ -d "$OMP_SRC" ]]; then
+  for rel in "${OMP_CONFIG_FILES[@]}"; do
+    [[ -f "$OMP_SRC/$rel" ]] || continue
+    mkdir -p "$OMP_DST/$(dirname "$rel")"
+    rsync -av "$OMP_SRC/$rel" "$OMP_DST/$rel"
+  done
+
+  for rel in "${OMP_CONFIG_DIRS[@]}"; do
+    [[ -d "$OMP_SRC/$rel" ]] || continue
+    mkdir -p "$OMP_DST/$rel"
+    rsync -av "$OMP_SRC/$rel/" "$OMP_DST/$rel/"
+  done
+else
+  echo "No omp config backup at $OMP_SRC; skipping omp restore" >&2
+fi
+
 cat <<EOF
 
 Done.
@@ -56,4 +84,6 @@ Next steps:
 1. Start pi: pi
 2. Login again with /login (auth.json is intentionally not stored in git).
 3. Use /reload in an existing pi session to reload prompts, skills, extensions, and themes.
+4. Start omp: omp
+5. Login again with /login (omp credentials live in ~/.omp/agent/agent.db, which is not stored in git).
 EOF

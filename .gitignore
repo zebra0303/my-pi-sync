@@ -9,6 +9,17 @@ git/
 npm/
 *.jsonl
 
+# omp secrets / volatile data: never commit these
+.env
+.env.*
+secrets.yml
+secret-placeholder.key
+*.token
+install-id
+*.db
+*.db-shm
+*.db-wal
+
 # Node
 node_modules/
 

@@ -2,5 +2,6 @@ node_modules/
 .pi/
 .git/
 *.md
-config/**/*.md
-config/pi/agent/skills/atlassian-workflows/scripts/
+# config/ is a verbatim mirror of ~/.pi and ~/.omp. Reformatting it would make
+# backup and restore stop round-tripping.
+config/

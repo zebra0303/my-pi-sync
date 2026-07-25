@@ -3,6 +3,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/versions.env"
+# shellcheck source=scripts/omp-manifest.sh
+source "$ROOT_DIR/scripts/omp-manifest.sh"
 
 check_version() {
   local name="$1"
@@ -19,6 +21,7 @@ check_version() {
 check_version "node" "$NODE_VERSION" "$(node -v 2>/dev/null | sed 's/^v//' || true)"
 check_version "npm" "$NPM_VERSION" "$(npm -v 2>/dev/null || true)"
 check_version "pi" "$PI_CODING_AGENT_VERSION" "$(npm list -g --depth=0 @earendil-works/pi-coding-agent 2>/dev/null | sed -n 's/.*@earendil-works\/pi-coding-agent@//p' || true)"
+check_version "omp" "$OMP_VERSION" "$(omp --version 2>/dev/null | sed 's|^omp/||' || true)"
 
 for path in \
   "$HOME/.pi/agent/settings.json" \
@@ -39,5 +42,19 @@ do
     echo "OK: $path"
   else
     echo "MISSING: $path"
+  fi
+done
+
+# Every backed-up omp config entry must exist in the live config root.
+OMP_DST="$(omp_config_root)"
+OMP_SRC="$ROOT_DIR/config/omp"
+
+for rel in "${OMP_CONFIG_FILES[@]}" "${OMP_CONFIG_DIRS[@]}"; do
+  [[ -e "$OMP_SRC/$rel" ]] || continue
+
+  if [[ -e "$OMP_DST/$rel" ]]; then
+    echo "OK: $OMP_DST/$rel"
+  else
+    echo "MISSING: $OMP_DST/$rel"
   fi
 done

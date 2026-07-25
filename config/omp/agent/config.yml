@@ -1,0 +1,18 @@
+symbolPreset: nerd
+theme: 
+  dark: titanium
+setupVersion: 1
+modelRoles: 
+  default: anthropic/claude-opus-5:medium
+statusLine: 
+  separator: powerline
+  preset: default
+defaultThinkingLevel: medium
+hideThinkingBlock: false
+bash: 
+  enabled: true
+task: 
+  agentModelOverrides: 
+    {}
+dev: 
+  autoqaConsent: granted

@@ -28,11 +28,13 @@
     "typescript-eslint": "^8.59.2"
   },
   "scripts": {
+    "backup": "./scripts/backup.sh",
+    "check": "./scripts/check.sh",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "test": "node --test scripts/*.test.mjs",
+    "test": "node --test tests/*.test.mjs",
     "prepare": "command -v husky >/dev/null 2>&1 && husky || true"
   },
   "packageManager": "pnpm@11.0.8"

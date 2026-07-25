@@ -2,14 +2,12 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const scriptPath = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  'backup-installed-themes.mjs',
-);
+import { scriptPath } from './helpers.mjs';
+
+const themesScript = scriptPath('backup-installed-themes.mjs');
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -40,7 +38,7 @@ test('backs up theme files declared by installed package settings', () => {
   });
   writeTheme(path.join(packageRoot, 'themes/mocha.json'), 'mocha');
 
-  execFileSync('node', [scriptPath, src, dst], { encoding: 'utf8' });
+  execFileSync('node', [themesScript, src, dst], { encoding: 'utf8' });
 
   assert.equal(
     fs.readFileSync(path.join(dst, 'themes/mocha.json'), 'utf8'),
@@ -70,7 +68,7 @@ test('backs up package themes even when package theme loading is disabled', () =
   });
   writeTheme(path.join(packageRoot, 'themes/mocha.json'), 'mocha');
 
-  execFileSync('node', [scriptPath, src, dst], { encoding: 'utf8' });
+  execFileSync('node', [themesScript, src, dst], { encoding: 'utf8' });
 
   assert.equal(
     fs.readFileSync(path.join(dst, 'themes/mocha.json'), 'utf8'),
