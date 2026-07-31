@@ -19,6 +19,7 @@ Use this skill for Atlassian tasks that were previously handled by Claude comman
 - **Implement ticket**: when the user asks to implement a Jira ticket or invokes `/implement-ticket`. Read `references/implement-ticket.md`. Before any implementation action, always read `Docs/.dev/<TICKET>-progress.md` if it exists and resume from that state. Persist progress under `Docs/.dev/<TICKET>-progress.md` when the repository has a `Docs` directory; otherwise use `.dev/`.
 - **Jira Dev Task sync**: when the user asks to sync a DevTask/Sub-task(Dev) from a Story, create one or more Sub-task(Dev) children from a Story, split development work by size/layer/owner/dependency, update Background/Description, manage implementation subtasks, or detect development work item file conflicts. Prompt command: `/jira-dev-task`. Read `references/jira-dev-task.md`.
 - **Markdown to ADF**: use `scripts/md-to-adf.py` whenever Markdown must be uploaded to Jira fields or other Atlassian APIs that require Atlassian Document Format.
+- **Publish Markdown to Confluence**: whenever a Confluence page must be created or updated from Markdown, use `scripts/confluence-publish.py`. Read "Confluence page formatting" below — never call `confluence create-child` / `confluence update` with a Markdown file directly.
 
 ## General Rules
 
@@ -28,6 +29,57 @@ Use this skill for Atlassian tasks that were previously handled by Claude comman
 - Treat Story requirements as the source of truth. Include every non-strikethrough Story item; only exclude strikethrough items.
 - Use actual repository searches and file reads for technical findings. Do not guess file paths, line numbers, dependencies, or risks.
 - Before mutating Jira or Confluence, show a concise preview and ask for confirmation unless the user explicitly asked to perform the update.
+
+## Confluence page formatting
+
+`confluence create-child` / `confluence update` default `--format` to `storage`. Passing a
+Markdown file without `--format markdown` uploads the raw Markdown as literal text, so the page
+renders as a wall of `##`, `|`, and backticks. Always publish through the bundled script instead:
+
+```bash
+# create a child page (parent may be a page or a folder id)
+python3 ~/.pi/agent/skills/atlassian-workflows/scripts/confluence-publish.py page.md \
+  --parent <PARENT_ID> --title "제목"
+
+# update an existing page
+python3 ~/.pi/agent/skills/atlassian-workflows/scripts/confluence-publish.py page.md --page <PAGE_ID>
+
+# inspect the generated storage XML first
+python3 ~/.pi/agent/skills/atlassian-workflows/scripts/confluence-publish.py page.md --dry-run -o /tmp/page.xml
+```
+
+It converts Markdown → storage and then post-processes it into native Confluence nodes, so the
+separate `confluence_checkboxes.py` step is no longer needed:
+
+| Markdown | Renders as |
+| --- | --- |
+| `[[TOC]]` | table-of-contents macro |
+| `[[IMAGE:diagram.png\|캡션\|900]]` | attaches the file (relative to the `.md`) and embeds it centered, with an italic caption |
+| `> [!WARNING]` / `[!NOTE]` / `[!INFO]` / `[!TIP]` blockquote | Confluence warning / note / info / tip panel |
+| `- [ ]` / `- [x]` list | native task list with real checkboxes |
+| fenced code blocks, tables, headings | code macro, native tables, headings |
+
+Authoring rules for readable pages:
+
+- Never paste ASCII-art diagrams. CJK glyphs are double-width and the alignment collapses. Render a
+  real diagram instead: write an SVG, screenshot it with the `browser` tool
+  (`await page.$('svg')` → `el.screenshot({ type: 'png' })`), and embed it with `[[IMAGE:...]]`.
+- **Author diagrams at 760 logical px wide** — the Confluence content column. The script emits
+  `ac:width="760"`, so a wider SVG gets scaled down and its text becomes unreadable; at 760 the
+  font sizes you write are the pixels the reader sees (12–13px labels, 10–11px notes). Screenshot
+  with viewport `scale: 3` so the PNG stays crisp. A too-wide image forces horizontal page scroll.
+- SVG arrowheads: draw the marker pointing along **+x** (`M0,0 L6.5,2.5 L0,5 Z` with `refX="6.5"`)
+  and let `orient="auto"` rotate it. A marker drawn pointing along +y renders sideways on vertical
+  connectors.
+- Put `[[TOC]]` right after the intro blockquote on any page longer than a few screens.
+- Use panels (`> [!WARNING]`) for caveats instead of bold-prefixed paragraphs.
+- Use tables for anything with 3+ parallel items (settings, options, error cases).
+- Verify after publishing — the rendered HTML proves the macros resolved:
+  ```bash
+  confluence api "/wiki/rest/api/content/<PAGE_ID>?expand=body.view" | jq -r '.body.view.value'
+  ```
+  Check that `[[` and `## ` do not appear literally and that `<img src=".../download/attachments/...">`
+  is present for every image.
 
 ## Confluence image preservation
 
