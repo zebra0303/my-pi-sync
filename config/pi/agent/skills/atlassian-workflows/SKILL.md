@@ -24,6 +24,7 @@ Use this skill for Atlassian tasks that were previously handled by Claude comman
 ## General Rules
 
 - Keep conversation with the user in the user's language, but write Jira ticket content in English unless the workflow explicitly asks for both English and Korean output.
+- **Pull request titles are always English, with no exception.** This applies even when the PR body, the Jira ticket, or the conversation is in Korean. When the user asks for a Korean PR, that means the PR **body** is Korean; the title still follows `<type>(<scope>): <subject> [TICKET]` in English. See `~/.pi/agent/docs/conventions/git.md` for the full PR convention.
 - Prefer `acli` for Jira reads/standard edits and `confluence` for Confluence reads/searches/creates.
 - If `acli`, `confluence`, or Atlassian API calls fail because credentials are missing, tell the user which environment variables or login steps are needed instead of inventing data.
 - Treat Story requirements as the source of truth. Include every non-strikethrough Story item; only exclude strikethrough items.

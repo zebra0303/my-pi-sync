@@ -66,6 +66,17 @@ ci(actions): fix deployment script
 
 PR titles follow the commit message convention with a Jira ticket number appended.
 
+### Rules
+
+- The PR **title must always be written in English**, without exception. This holds even when the
+  PR body, the ticket, or the conversation is in Korean, and even when the user asks for a
+  Korean PR. A request for a "Korean PR" means the **body** is Korean; the title stays English.
+- `type`, `scope`, and `subject` obey the commit message rules above (lowercase `type`,
+  lowercase-initial `subject`, no trailing period).
+- Append the ticket number in brackets at the end: `[LHVE-361]`.
+- Branch names take the form `<type>/<TICKET>-<slug>`, e.g.
+  `chore/LHVE-361-patch-transitive-dependency-security-advisories`.
+
 #### Examples
 
 ```text
