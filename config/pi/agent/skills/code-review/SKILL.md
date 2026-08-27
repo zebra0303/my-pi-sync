@@ -134,9 +134,9 @@ If there are no meaningful issues, say `No major issues found` and briefly menti
 
 ### PR review comment format
 
-When the user asks for PR review comments/messages, write each PR-ready comment in English first.
+When the user asks for PR review comments/messages, write each PR-ready comment in Korean by default.
 
-After each English PR comment, add a detailed Korean A-to-Z explanation under a separate heading.
+After each Korean PR comment, add a detailed Korean A-to-Z explanation under a separate heading.
 
 Use this format:
 
@@ -144,7 +144,7 @@ Use this format:
 ### PR comment
 
 ```md
-P2: English PR-ready review comment here...
+P2: 여기에 GitHub에 바로 붙여 넣을 수 있는 한국어 PR 코멘트를 작성합니다.
 ```
 
 ### 상세 설명
@@ -157,9 +157,9 @@ P2: English PR-ready review comment here...
 - 같은 문제를 피하기 위한 mental model:
 ````
 
-The English PR comment should be concise and directly pasteable into GitHub.
+The Korean PR comment should be concise and directly pasteable into GitHub.
 The Korean explanation should be more detailed and educational.
-Do not include the Korean explanation inside the GitHub-ready PR comment block unless the user explicitly asks for bilingual PR comments.
+Only write the PR comment in English or another language when the user explicitly requests that language.
 
 ## Rules
 
