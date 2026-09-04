@@ -42,8 +42,14 @@ OMP_CONFIG_FILES=(
   # custom /share implementation
   agent/share.ts
   agent/share.js
+)
 
-  # plugin + marketplace registries (config root, not the agent dir)
+# Plugin/marketplace registries. Backed up like the files above, but never
+# copied back into ~/.omp: they record absolute paths of the machine that wrote
+# them (marketplace catalog cache, plugin install cache, bun's node_modules
+# symlinks). scripts/omp-plugins.sh replays them through the omp CLI instead, so
+# a restore rebuilds the cache and lockfile locally.
+OMP_PLUGIN_REGISTRY_FILES=(
   marketplaces.json
   plugins/package.json
   plugins/installed_plugins.json

@@ -33,6 +33,7 @@ This is a personal bootstrap repository for quickly reproducing the same pi and 
 - Backup entry point (auto-detects pi and omp): [`scripts/backup.sh`](scripts/backup.sh)
 - Per-agent backup scripts: [`scripts/backup-pi.sh`](scripts/backup-pi.sh), [`scripts/backup-omp.sh`](scripts/backup-omp.sh)
 - omp backup allowlist shared by all scripts: [`scripts/omp-manifest.sh`](scripts/omp-manifest.sh)
+- omp plugin/marketplace replay: [`scripts/omp-plugins.sh`](scripts/omp-plugins.sh)
 - Environment check script: [`scripts/check.sh`](scripts/check.sh)
 - Script tests: [`tests/`](tests/) — run with `npm test`
 
@@ -69,7 +70,13 @@ Backed-up files (any that exist; omp only writes the variants you actually touch
 - `agent/mcp.json`, `agent/.mcp.json`, `agent/lsp.{json,yml,yaml}`
 - `agent/AGENTS.md`, `RULES.md`, `SYSTEM.md`, `APPEND_SYSTEM.md`, `TITLE_SYSTEM.md`, `WATCHDOG.{md,yml,yaml}`
 - `agent/share.{ts,js}` — custom `/share` implementation
-- `marketplaces.json`, `plugins/package.json`, `plugins/installed_plugins.json`, `plugins/omp-plugins.lock.json`
+
+Plugin registries (backed up, but replayed instead of copied on restore — see below):
+
+- `marketplaces.json` — configured marketplaces
+- `plugins/package.json` — npm/git/linked plugins
+- `plugins/installed_plugins.json` — marketplace installs (user and project scope)
+- `plugins/omp-plugins.lock.json` — enable/feature state and resolved versions
 
 Backed-up directories (mirrored, so deletions propagate into the repo):
 
@@ -79,6 +86,32 @@ Restore is intentionally **non-destructive**: `scripts/install.sh` copies tracke
 without deleting untracked local skills, themes, or extensions.
 
 Named omp profiles (`~/.omp/profiles/<name>/agent`) are not synced; only the default profile is.
+
+### omp plugins
+
+The four registry files above are backed up but never copied back into `~/.omp`. They record
+absolute paths of the machine that wrote them — the marketplace catalog cache, the plugin install
+cache, and bun's `node_modules` symlinks — so copying them onto another machine yields a registry
+pointing at directories that do not exist. `scripts/install.sh` instead replays them through the omp
+CLI, which rebuilds the cache, the `node_modules` symlinks, and `omp-plugins.lock.json` locally:
+
+```bash
+./scripts/omp-plugins.sh plan      # what the backup asks for
+./scripts/omp-plugins.sh restore   # omp plugin marketplace add / omp plugin install what is missing
+./scripts/omp-plugins.sh status    # OK/MISSING per marketplace and plugin
+```
+
+Details:
+
+- Marketplaces are re-added from their recorded source (`owner/repo`, git URL, catalog URL, or local
+  directory). A local-directory marketplace only restores if that directory exists on the new machine.
+- Marketplace plugins are reinstalled as `omp plugin install <name>@<marketplace>`. Only user-scoped
+  installs are replayed; project-scoped ones belong to their own repository's `.omp` directory.
+- npm/git plugins come from `plugins/package.json`. A caret/tilde range is not a valid omp install
+  spec, so the exact version from `omp-plugins.lock.json` is used when available.
+- Restore is idempotent: already-configured marketplaces and already-installed plugins are skipped.
+  A failed item is reported and the rest continue; the script exits `4` so `install.sh` can warn.
+- `scripts/check.sh` verifies plugins with `omp plugin list --json` rather than by looking for files.
 
 ## Git convention
 
@@ -98,7 +131,13 @@ cd ~/Git/my-pi-sync
 ./scripts/check.sh
 ```
 
-The install script assumes Homebrew is already installed. It restores `nvm`, the pinned Node/npm versions, `pi`, `pnpm`, and pi configuration files, installs `omp` from `can1357/tap` when it is missing, and copies the tracked `config/omp/` files into `~/.omp`.
+The install script assumes Homebrew is already installed. It restores `nvm`, the pinned Node/npm versions, `pi`, `pnpm`, and pi configuration files, installs `omp` from `can1357/tap` when it is missing, copies the tracked `config/omp/` files into `~/.omp`, and reinstalls the backed-up omp marketplaces and plugins.
+
+pi packages (themes, extensions, and other `pi install` sources) are restored through
+`settings.json`: its `packages` array is backed up, and pi fetches those sources itself on the next
+start. The generated `~/.pi/agent/{npm,git,bin}` trees stay out of git for that reason; the selected
+theme's JSON is additionally materialized into `config/pi/agent/themes/` so it survives a package
+source going away.
 
 ## Install as a pi package
 

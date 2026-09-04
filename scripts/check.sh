@@ -58,3 +58,7 @@ for rel in "${OMP_CONFIG_FILES[@]}" "${OMP_CONFIG_DIRS[@]}"; do
     echo "MISSING: $OMP_DST/$rel"
   fi
 done
+
+# Plugins are not restored by copying their registries, so verify them through
+# the omp CLI instead of checking for files under ~/.omp.
+"$ROOT_DIR/scripts/omp-plugins.sh" status "$OMP_SRC"

@@ -89,7 +89,7 @@ install_npm_global @earendil-works/pi-coding-agent "$PI_CODING_AGENT_VERSION"
 install_pnpm "$PNPM_VERSION"
 
 mkdir -p "$HOME/.pi/agent"
-rsync -av "$ROOT_DIR/config/pi/agent/" "$HOME/.pi/agent/"
+rsync -av --checksum "$ROOT_DIR/config/pi/agent/" "$HOME/.pi/agent/"
 
 # omp (oh-my-pi) is distributed via Homebrew, not npm.
 if ! command -v omp >/dev/null 2>&1; then
@@ -105,14 +105,23 @@ if [[ -d "$OMP_SRC" ]]; then
   for rel in "${OMP_CONFIG_FILES[@]}"; do
     [[ -f "$OMP_SRC/$rel" ]] || continue
     mkdir -p "$OMP_DST/$(dirname "$rel")"
-    rsync -av "$OMP_SRC/$rel" "$OMP_DST/$rel"
+    rsync -av --checksum "$OMP_SRC/$rel" "$OMP_DST/$rel"
   done
 
   for rel in "${OMP_CONFIG_DIRS[@]}"; do
     [[ -d "$OMP_SRC/$rel" ]] || continue
     mkdir -p "$OMP_DST/$rel"
-    rsync -av "$OMP_SRC/$rel/" "$OMP_DST/$rel/"
+    rsync -av --checksum "$OMP_SRC/$rel/" "$OMP_DST/$rel/"
   done
+
+  # Marketplaces and plugins are reinstalled through the omp CLI: their
+  # registries record absolute paths from the machine that wrote them, so a raw
+  # copy would point at a cache that does not exist here.
+  plugin_status=0
+  OMP_BACKUP_DIR="$OMP_SRC" "$ROOT_DIR/scripts/omp-plugins.sh" restore "$OMP_SRC" || plugin_status=$?
+  if [[ $plugin_status -ne 0 ]]; then
+    echo "omp plugin restore reported failures (exit $plugin_status); rerun ./scripts/omp-plugins.sh restore after fixing them" >&2
+  fi
 else
   echo "No omp config backup at $OMP_SRC; skipping omp restore" >&2
 fi
