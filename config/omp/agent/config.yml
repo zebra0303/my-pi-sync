@@ -18,3 +18,15 @@ dev:
   autoqaConsent: granted
 composer:
   shape: band
+enabledProviders:
+  - codex
+  - claude
+skills:
+  customDirectories:
+    - ~/.codex/skills
+    - ~/.claude/skills/nx
+    - ~/.claude/skills/.system
+  enableClaudeUser: true
+  enableCodexUser: true
+commands:
+  enableClaudeUser: true
