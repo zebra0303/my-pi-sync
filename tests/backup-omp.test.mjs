@@ -115,6 +115,29 @@ test('mirrors deletions inside an allowlisted directory', () => {
   assert.ok(fs.existsSync(path.join(dst, 'agent/skills/keep/SKILL.md')));
 });
 
+test('picks up a same-size edit written in the same second as the previous backup', () => {
+  const { src, dst } = makeRoots('omp-backup-samesecond-');
+  const file = path.join(src, 'agent/config.yml');
+  const skill = path.join(src, 'agent/skills/demo/SKILL.md');
+
+  write(file, 'setupVersion: 1\n');
+  write(skill, '# demo v1\n');
+  backup(src, dst);
+
+  // rsync stores destination mtimes with one-second granularity, so a size-
+  // preserving edit made right after a backup is invisible to its default
+  // size+mtime quick check.
+  write(file, 'setupVersion: 2\n');
+  write(skill, '# demo v2\n');
+  backup(src, dst);
+
+  assert.equal(fs.readFileSync(path.join(dst, 'agent/config.yml'), 'utf8'), 'setupVersion: 2\n');
+  assert.equal(
+    fs.readFileSync(path.join(dst, 'agent/skills/demo/SKILL.md'), 'utf8'),
+    '# demo v2\n',
+  );
+});
+
 test('fails when the omp config root is missing', () => {
   const { src, dst } = makeRoots('omp-backup-missing-');
 

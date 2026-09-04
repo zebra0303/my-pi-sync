@@ -16,7 +16,10 @@ mkdir -p "$DST"
 # - auth.json: OAuth/API credentials
 # - sessions/: private session logs
 # - bin/, git/, npm/: generated package/runtime artifacts
-rsync -av \
+# --checksum instead of rsync's size+mtime quick check: destination mtimes have
+# one-second granularity, so a same-size edit written in the same second as the
+# previous backup would look unchanged and never reach the repo.
+rsync -av --checksum \
   --exclude 'auth.json' \
   --exclude 'sessions/' \
   --exclude 'bin/' \

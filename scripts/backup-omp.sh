@@ -18,13 +18,17 @@ mkdir -p "$DST"
 copied=0
 pruned=0
 
-for rel in "${OMP_CONFIG_FILES[@]}"; do
+for rel in "${OMP_CONFIG_FILES[@]}" "${OMP_PLUGIN_REGISTRY_FILES[@]}"; do
   src="$SRC/$rel"
   dst="$DST/$rel"
 
   if [[ -f "$src" ]]; then
     mkdir -p "$(dirname "$dst")"
-    rsync -a "$src" "$dst"
+    # --checksum, not rsync's default size+mtime quick check: rsync stores the
+    # destination mtime with one-second granularity, so an edit of the same size
+    # made within the same second as the previous backup looks unchanged and
+    # would silently stay out of the repo.
+    rsync -a --checksum "$src" "$dst"
     echo "file  $rel"
     copied=$((copied + 1))
   elif [[ -e "$dst" ]]; then
@@ -40,7 +44,7 @@ for rel in "${OMP_CONFIG_DIRS[@]}"; do
 
   if [[ -d "$src" ]]; then
     mkdir -p "$dst"
-    rsync -a --delete "${OMP_RSYNC_EXCLUDES[@]}" "$src/" "$dst/"
+    rsync -a --checksum --delete "${OMP_RSYNC_EXCLUDES[@]}" "$src/" "$dst/"
     echo "dir   $rel"
     copied=$((copied + 1))
   elif [[ -e "$dst" ]]; then
