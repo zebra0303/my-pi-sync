@@ -8,7 +8,8 @@
       "source": "git:github.com/otahontas/pi-coding-agent-catppuccin",
       "themes": []
     },
-    "npm:@ollama/pi-web-search"
+    "npm:@ollama/pi-web-search",
+    "git:github.com/obra/superpowers"
   ],
   "theme": "catppuccin-mocha"
 }
