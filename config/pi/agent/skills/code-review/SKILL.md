@@ -106,12 +106,13 @@ For `Review depth`, state whether the review was simple or thorough and why.
 
 For `What is good`, include 1–2 concrete strengths or commendable choices from the change, with file/function references when possible. Avoid forced praise; if there is not enough evidence, say so briefly.
 
-For each issue include:
+For every reported issue at any priority from `P1` through `P5`, include all of the following by default. This applies to both simple and thorough reviews, including requests containing only a PR link; no separate request for comments or explanations is needed.
 
 - Priority: `P1`–`P5`
 - Severity: `Critical` / `High` / `Medium` / `Low`
 - File/function/location
 - Problem
+- A GitHub-ready PR comment in a fenced `md` block, followed by a separate detailed A-to-Z explanation using the format below
 - A-to-Z explanation of the logic:
   - What the current code does step by step
   - Why that behavior becomes incorrect or risky
@@ -130,15 +131,13 @@ Priority guide:
 - `P4`: optional suggestion
 - `P5`: minor comment
 
-If there are no meaningful issues, say `No major issues found` and briefly mention remaining test gaps or manual checks.
+If there are no findings, say `No major issues found` and briefly mention remaining test gaps or manual checks. Do not invent findings or PR comments to fill the format.
 
-### PR review comment format
+### Required per-finding PR comment and A-to-Z format
 
-When the user asks for PR review comments/messages, write each PR-ready comment in Korean by default.
+For every reported `P1`–`P5` finding, write a Korean GitHub-ready PR comment and a separate detailed Korean A-to-Z explanation by default. Use the finding's actual priority in the comment. This is required even for minor findings and simple reviews; review depth changes the investigation scope, not this output contract.
 
-After each Korean PR comment, add a detailed Korean A-to-Z explanation under a separate heading.
-
-Use this format:
+Repeat the following format for each finding under `Key findings`, preceded by its title, priority, severity, and file/function/location. Fill every explanation item with issue-specific reasoning, not just a restatement of the comment.
 
 ````md
 ### PR comment
@@ -152,14 +151,16 @@ P2: 여기에 GitHub에 바로 붙여 넣을 수 있는 한국어 PR 코멘트�
 - 현재 코드가 하는 일:
 - 왜 문제가 되는지:
 - 어떤 조건에서 실패하는지:
+- 재현 절차 또는 구체적인 실패 시나리오:
 - 기대 동작:
 - 수정 방향:
 - 같은 문제를 피하기 위한 mental model:
 ````
 
 The Korean PR comment should be concise and directly pasteable into GitHub.
-The Korean explanation should be more detailed and educational.
-Only write the PR comment in English or another language when the user explicitly requests that language.
+The Korean explanation must walk through the current behavior, trigger, impact, expected result, root-cause fix, and mental model; a short summary does not replace it.
+Only write the PR comment and detailed explanation in English or another language when the user explicitly requests that language.
+Generate the comments in the response; do not post them to GitHub without explicit authorization.
 
 ## Rules
 
