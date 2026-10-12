@@ -3,7 +3,8 @@ theme:
   dark: titanium
 setupVersion: 2
 modelRoles:
-  default: openai/gpt-6.1-sol:medium
+  default: anthropic/claude-opus-5-5:medium
+  advisor: openai/gpt-6.1-sol:medium
 statusLine:
   separator: powerline
   preset: default
@@ -12,8 +13,7 @@ hideThinkingBlock: false
 bash:
   enabled: true
 task:
-  agentModelOverrides:
-    {}
+  agentModelOverrides: {}
 dev:
   autoqaConsent: granted
 composer:
