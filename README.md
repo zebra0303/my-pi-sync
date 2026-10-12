@@ -217,3 +217,8 @@ The Atlassian workflows that were previously used from `~/.claude/commands` and 
 - Prompt templates: `read-confluence`, `search-confluence`, `spike-report`, `sync-dev-task`, `md-to-adf`
 - Skill: `atlassian-workflows`
 - Script: `config/pi/agent/skills/atlassian-workflows/scripts/md-to-adf.py`
+
+## Multi-model debate
+
+- Skill: `model-debate` (`config/pi/agent/skills/model-debate/`) runs a three-model debate/review loop and turns the result into a deliverable (Confluence via `atlassian-workflows`, slides as Marp Markdown).
+- Panelist agents: `config/omp/agent/agents/debate-{opus,grok,gpt}.md`, pinned to `anthropic/claude-opus-5-5`, `cursor/grok-4.7`, `openai-codex/gpt-6.1-sol` at `thinking-level: medium`. Before each debate the skill runs `scripts/check-models.mjs`, which reports newer same-family models and, after approval, rewrites the `model:` line (`--apply`); run `scripts/backup.sh` afterwards to sync this copy.
