@@ -3,7 +3,7 @@ theme:
   dark: titanium
 setupVersion: 2
 modelRoles:
-  default: anthropic/claude-opus-5:medium
+  default: openai/gpt-6.1-sol:medium
 statusLine:
   separator: powerline
   preset: default
