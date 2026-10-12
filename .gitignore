@@ -3,6 +3,7 @@
 
 # pi secrets / volatile data: never commit these
 auth.json
+slides/
 sessions/
 bin/
 git/
