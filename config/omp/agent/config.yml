@@ -3,8 +3,11 @@ theme:
   dark: titanium
 setupVersion: 2
 modelRoles:
-  default: anthropic/claude-opus-5-5:medium
   advisor: openai/gpt-6.1-sol:medium
+  smol: cursor/grok-4.7:medium
+  plan: openai-codex/gpt-6.1-sol:medium
+  slow: openai/gpt-6.1-sol:medium
+  default: anthropic/claude-opus-5-5:medium
 statusLine:
   separator: powerline
   preset: default
@@ -30,3 +33,7 @@ skills:
   enableCodexUser: true
 commands:
   enableClaudeUser: true
+retry:
+  fallbackChains:
+    default:
+      - openai/gpt-6.1-sol
