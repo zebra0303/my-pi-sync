@@ -25,16 +25,29 @@ Run `node scripts/check-models.mjs` (relative to this skill). It compares each a
 - **Debate → produce** (e.g. "Design System 구축에 필요한 내용을 토론해서 Confluence 문서로"): debate the content first, then draft the artifact from the synthesis, then run one review loop.
 - **Produce → review** (e.g. "PPT를 만들고 모델별 피드백으로 최적화"): draft the artifact yourself (or from user material), then run review loops.
 
+## Debate folder
+
+Store every debate artifact in the current working directory, not in `local://`:
+
+```text
+<cwd>/.dev/debate-{YYYY-MM-DD-HH:MM}/
+```
+
+- Create it once before the brief, using the local time the debate starts: `DEBATE_DIR="$PWD/.dev/debate-$(date +%Y-%m-%d-%H:%M)"; mkdir -p "$DEBATE_DIR"`. Create `.dev` if it does not exist. If that folder already exists (two debates in the same minute), append `-2`, `-3`, … instead of mixing files.
+- Pass the absolute `$DEBATE_DIR` path to every panelist; never rely on a relative path or `local://`.
+- Inside a Git repository, check `git check-ignore -q .dev/`. If `.dev/` is not ignored, add `.dev/` to `.git/info/exclude` (local only; never edit a tracked `.gitignore` unless the user asks) and mention it in the report.
+- Never write secrets (keys, tokens, cookies) into these files; record only derived facts such as decoded metadata.
+
 ## Workflow
 
-1. **Brief.** Write `local://debate/brief.md`: goal, audience, deliverable format, constraints, user-provided material/links, and 3–6 evaluation criteria. Read any referenced repo files or Confluence pages first so panelists start from facts. Ask the user only for missing information that changes the outcome.
-2. **Round 1: independent proposals.** Each panelist reads the brief and writes its proposal to `local://debate/r1-<agent>.md`. Panelists must not see each other's work in this round.
-3. **Round 2: cross-critique.** Each panelist reads the other two Round 1 files, critiques them, and returns a revised position to `local://debate/r2-<agent>.md`.
-4. **Optional Round 3.** Run it only when a disagreement remains that would materially change the deliverable; scope it to those disputes. Hard cap: 3 rounds.
-5. **Synthesis.** Write `local://debate/synthesis.md`: consensus, each disputed point with the position adopted and why, rejected ideas with reasons, open questions for the user. Decide on evidence and the brief's criteria, not by majority vote.
+1. **Brief.** Write `$DEBATE_DIR/brief.md`: goal, audience, deliverable format, constraints, user-provided material/links, and 3–6 evaluation criteria. Read any referenced repo files or Confluence pages first so panelists start from facts. Ask the user only for missing information that changes the outcome.
+2. **Round 1: independent proposals.** Each panelist reads the brief and writes its proposal to `$DEBATE_DIR/r1-<agent>.md`. Panelists must not see each other's work in this round.
+3. **Round 2: cross-critique.** Each panelist reads the other two Round 1 files, critiques them, and returns a revised position to `$DEBATE_DIR/r2-<agent>.md`.
+4. **Optional Round 3.** Run it only when a disagreement remains that would materially change the deliverable; scope it to those disputes (`$DEBATE_DIR/r3-<agent>.md`). Hard cap: 3 rounds.
+5. **Synthesis.** Write `$DEBATE_DIR/synthesis.md`: consensus, each disputed point with the position adopted and why, rejected ideas with reasons, open questions for the user. Decide on evidence and the brief's criteria, not by majority vote.
 6. **Draft** the deliverable from the synthesis (see Deliverables).
-7. **Review loop.** Each panelist reviews the draft against the criteria and returns findings tagged `critical` / `major` / `minor`, each with location and concrete fix. Apply accepted fixes; record rejected ones with a reason. Repeat only while critical/major findings remain, at most 2 loops.
-8. **Report** to the user: the artifact (path or link), a short decision log (who proposed what, what was adopted/rejected), unresolved disagreements, and any panelist failures.
+7. **Review loop.** Each panelist reviews the draft against the criteria and writes findings to `$DEBATE_DIR/review<n>-<agent>.md`, tagged `critical` / `major` / `minor`, each with location and concrete fix. Apply accepted fixes; record rejected ones with a reason. Repeat only while critical/major findings remain, at most 2 loops.
+8. **Report** to the user: the artifact (path or link), the absolute `$DEBATE_DIR` path, a short decision log (who proposed what, what was adopted/rejected), unresolved disagreements, and any panelist failures.
 
 Use an `outputSchema` per round so results merge cleanly. Suggested shapes:
 
@@ -43,7 +56,7 @@ Use an `outputSchema` per round so results merge cleanly. Suggested shapes:
 
 ## Rules
 
-- Panelists have full tools. Give each one an explicit write path (its own `local://debate/...` file or a per-agent draft path); only you edit the real deliverable.
+- Panelists have full tools. Give each one an explicit write path (its own `$DEBATE_DIR/...` file or a per-agent draft path); only you edit the real deliverable.
 - External actions (Confluence create/update, Jira, git push, sharing) require explicit user approval immediately before the action, after showing the final draft.
 - If a panelist fails (auth, quota, timeout), retry once, then continue with the rest and state it in the report. Never substitute another model silently.
 - Keep the user's language for briefs and deliverables.
