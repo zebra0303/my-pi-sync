@@ -16,6 +16,7 @@ mkdir -p "$DST"
 # - auth.json: OAuth/API credentials
 # - sessions/: private session logs
 # - bin/, git/, npm/: generated package/runtime artifacts
+# - /install/: pi's managed runtime install (releases/<version>/node_modules)
 # - __pycache__/: Python bytecode caches regenerated when skill scripts run
 # --checksum instead of rsync's size+mtime quick check: destination mtimes have
 # one-second granularity, so a same-size edit written in the same second as the
@@ -26,6 +27,7 @@ rsync -av --checksum \
   --exclude 'bin/' \
   --exclude 'git/' \
   --exclude 'npm/' \
+  --exclude '/install/' \
   --exclude '__pycache__/' \
   "$SRC/" "$DST/"
 
