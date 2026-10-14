@@ -3,7 +3,7 @@
   "target": "Claude Code",
   "installPath": "/Users/larry/.claude/skills/twg-code-review",
   "binaryPath": "/Users/larry/.local/bin/twg",
-  "installedAt": "2026-10-13T13:40:13.395Z",
+  "installedAt": "2026-10-14T00:32:23.661Z",
   "installedVersion": "1.3.5",
   "buildProfile": "external",
   "buildCommit": "56b9b3472458",
