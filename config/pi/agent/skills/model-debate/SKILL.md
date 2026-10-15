@@ -9,11 +9,19 @@ metadata:
 
 Run a structured debate between three panelist agents, then turn the outcome into the requested deliverable. You (the main session) are the orchestrator: you frame the brief, run rounds, judge disagreements, own the final artifact, and are the only one who publishes.
 
-Panelists: `debate-opus` (Anthropic Claude Opus), `debate-grok` (Cursor Grok), `debate-gpt` (OpenAI Codex GPT Sol tier). Their exact models are pinned in `~/.omp/agent/agents/debate-*.md` (`model:` line, `thinking-level: medium`); change models there, not here. Dispatch all three in one `task` batch per round (`agent: "debate-opus"` etc.) so they run in parallel and stay independent within a round.
+Panelists: `debate-opus` (Anthropic Claude Opus), `debate-grok` (Cursor Grok Fast tier, chosen for speed), `debate-gpt` (OpenAI Codex GPT Sol tier). Their exact models are pinned in `~/.omp/agent/agents/debate-*.md` (`model:` line, `thinking-level: medium`); change models there, not here. Dispatch all three in one `task` batch per round (`agent: "debate-opus"` etc.) so they run in parallel and stay independent within a round.
+
+Nicknames are display names only; agent IDs and file names keep `debate-*`. Use the nickname everywhere a human reads it (prompts, critiques, synthesis, decision log, report, live stage):
+
+| Agent | Nickname | Model |
+| --- | --- | --- |
+| `debate-gpt` | Geppetto | GPT |
+| `debate-opus` | Clark | Claude Opus |
+| `debate-grok` | Rocky | Grok Fast |
 
 ## Model check (before Round 1)
 
-Run `node scripts/check-models.mjs` (relative to this skill). It compares each agent's pinned model with the newest catalog model of the same provider and family (e.g. `Claude Opus {v}`, `Grok {v}`, `GPT-{v}-Sol`; Fast/1M variants and other tiers excluded) that supports the pinned thinking level, and prints JSON per agent.
+Run `node scripts/check-models.mjs` (relative to this skill). It compares each agent's pinned model with the newest catalog model of the same provider and family (e.g. `Claude Opus {v}`, `Grok {v} Fast`, `GPT-{v}-Sol`; the family keeps the pinned tier, so other tiers and 1M/500k variants are excluded) that supports the pinned thinking level, and prints JSON per agent.
 
 - All `up-to-date`: proceed silently.
 - Any `update-available`: show `current → latest` and ask the user whether to switch. On approval run `node scripts/check-models.mjs --apply`, which rewrites only the `model:` line; then tell the user to run `scripts/backup.sh` in `my-pi-sync` to sync the repo copy. If declined, proceed with the pinned models.
@@ -38,6 +46,16 @@ Store every debate artifact in the current working directory, not in `local://`:
 - Inside a Git repository, check `git check-ignore -q .dev/`. If `.dev/` is not ignored, add `.dev/` to `.git/info/exclude` (local only; never edit a tracked `.gitignore` unless the user asks) and mention it in the report.
 - Never write secrets (keys, tokens, cookies) into these files; record only derived facts such as decoded metadata.
 
+## Live stage
+
+Right after creating `$DEBATE_DIR`, start the pixel-art stage as a long-lived background service (omp `bash` with `name: "debate-stage"`, `ready: { log: "Debate stage:" }`):
+
+```sh
+node scripts/debate-stage.mjs "$DEBATE_DIR"
+```
+
+It opens the browser on a random localhost port and polls the folder every second; the page UI is in English. Each character is labelled `Nickname (model, thinking level)`, e.g. `Rocky (Grok 4.7 Fast, medium)`, read at startup from the pinned agent files and the `omp models` catalog, so restart the stage after changing models. Geppetto, Clark and Rocky show `…` while their file for the current round is missing, then act out each file as speech bubbles (TL;DR line plus top-level bullets); in Round 2+ a bubble is aimed at the panelist it mentions most. `brief.md` and `synthesis.md` appear as narrator banners. Below the stage, a Synthesis panel renders `synthesis.md` in full and a Reviews panel shows each `review<n>-<agent>.md` as a per-panelist card with severity badges and per-round counts (it parses `- [critical|major|minor] …` bullets, so keep that format). Mention the printed URL to the user. Stop it (write empty content to `proc://debate-stage/kill`) before starting another debate; if it fails to start, continue the debate without it.
+
 ## Workflow
 
 1. **Brief.** Write `$DEBATE_DIR/brief.md`: goal, audience, deliverable format, constraints, user-provided material/links, and 3–6 evaluation criteria. Read any referenced repo files or Confluence pages first so panelists start from facts. Ask the user only for missing information that changes the outcome.
@@ -46,7 +64,7 @@ Store every debate artifact in the current working directory, not in `local://`:
 4. **Optional Round 3.** Run it only when a disagreement remains that would materially change the deliverable; scope it to those disputes (`$DEBATE_DIR/r3-<agent>.md`). Hard cap: 3 rounds.
 5. **Synthesis.** Write `$DEBATE_DIR/synthesis.md`: consensus, each disputed point with the position adopted and why, rejected ideas with reasons, open questions for the user. Decide on evidence and the brief's criteria, not by majority vote.
 6. **Draft** the deliverable from the synthesis (see Deliverables).
-7. **Review loop.** Each panelist reviews the draft against the criteria and writes findings to `$DEBATE_DIR/review<n>-<agent>.md`, tagged `critical` / `major` / `minor`, each with location and concrete fix. Apply accepted fixes; record rejected ones with a reason. Repeat only while critical/major findings remain, at most 2 loops.
+7. **Review loop.** Each panelist reviews the draft against the criteria and writes findings to `$DEBATE_DIR/review<n>-<agent>.md` after the `TL;DR:` verdict, one bullet per finding: `- [critical|major|minor] <location> — <issue> → <fix>`. Apply accepted fixes; record rejected ones with a reason. Repeat only while critical/major findings remain, at most 2 loops.
 8. **Report** to the user: the artifact (path or link), the absolute `$DEBATE_DIR` path, a short decision log (who proposed what, what was adopted/rejected), unresolved disagreements, and any panelist failures.
 
 Use an `outputSchema` per round so results merge cleanly. Suggested shapes:
@@ -59,6 +77,7 @@ Use an `outputSchema` per round so results merge cleanly. Suggested shapes:
 - Panelists have full tools. Give each one an explicit write path (its own `$DEBATE_DIR/...` file or a per-agent draft path); only you edit the real deliverable.
 - External actions (Confluence create/update, Jira, git push, sharing) require explicit user approval immediately before the action, after showing the final draft.
 - If a panelist fails (auth, quota, timeout), retry once, then continue with the rest and state it in the report. Never substitute another model silently.
+- Tell each panelist its nickname and the others' nicknames, and require every `$DEBATE_DIR` file to start with a one-sentence `TL;DR:` line followed by its key points as top-level `-` bullets; the live stage reads exactly that.
 - Keep the user's language for briefs and deliverables.
 
 ## Deliverables

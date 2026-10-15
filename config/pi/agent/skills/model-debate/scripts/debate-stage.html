@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model Debate Stage</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #14151c;
+    --panel: #1f2130;
+    --border: #3a3d55;
+    --fg: #e8e8f0;
+    --muted: #9a9cb5;
+    --accent: #ffd166;
+    font-family: ui-monospace, "SF Mono", Menlo, "D2Coding", monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); }
+  main { max-width: 980px; margin: 0 auto; padding: 16px; display: grid; gap: 12px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  h1 { font-size: 16px; margin: 0; flex: 1 1 320px; overflow-wrap: anywhere; }
+  .chip { border: 2px solid var(--border); padding: 2px 8px; font-size: 13px; background: var(--panel); }
+  .chip.live::before { content: "● "; color: #6bd968; }
+  .chip.offline::before { content: "● "; color: #ff6b6b; }
+  button {
+    font: inherit; font-size: 13px; color: var(--fg); background: var(--panel);
+    border: 2px solid var(--border); padding: 2px 10px; cursor: pointer;
+  }
+  button:hover, button:focus-visible { border-color: var(--accent); outline: none; }
+  .stage { position: relative; aspect-ratio: 16 / 9; border: 4px solid var(--border); overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+  .bubble {
+    position: absolute; max-width: 46%; padding: 8px 10px; font-size: 14px; line-height: 1.45;
+    background: #fffdf5; color: #1b1b24; border: 3px solid #1b1b24;
+    box-shadow: 4px 4px 0 rgb(0 0 0 / 0.35); overflow-wrap: anywhere;
+  }
+  .bubble[hidden] { display: none; }
+  .bubble .who { display: block; font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+  .bubble::after {
+    content: ""; position: absolute; bottom: -12px; left: var(--tail, 50%); translate: -50% 0;
+    border: 6px solid transparent; border-top-color: #1b1b24;
+  }
+  .banner {
+    position: absolute; top: 8px; left: 50%; translate: -50% 0; max-width: 80%;
+    padding: 6px 12px; font-size: 13px; text-align: center; background: rgb(20 21 28 / 0.85);
+    border: 2px solid var(--accent); color: var(--accent);
+  }
+  .banner[hidden] { display: none; }
+  .tag { position: absolute; bottom: 2%; translate: -50% 0; font-size: 13px; font-weight: 700; text-shadow: 2px 2px 0 #000; white-space: nowrap; }
+  .log {
+    border: 2px solid var(--border); background: var(--panel); padding: 8px 12px;
+    max-height: 260px; overflow-y: auto; font-size: 13px; line-height: 1.5;
+  }
+  .log p { margin: 0 0 4px; }
+  .log .meta { color: var(--muted); }
+  .dir { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  .panel { border: 2px solid var(--border); background: var(--panel); padding: 10px 14px; font-size: 14px; line-height: 1.55; }
+  .panel h2 { font-size: 15px; margin: 0 0 8px; color: var(--accent); }
+  .panel h3 { font-size: 14px; margin: 12px 0 6px; }
+  .panel h4, .panel h5, .panel h6 { font-size: 13px; margin: 10px 0 4px; }
+  .panel p { margin: 0 0 6px; }
+  .panel ul, .panel ol { margin: 0 0 8px; padding-left: 22px; }
+  .panel li { margin-bottom: 3px; }
+  .panel a { color: #8ecbff; }
+  .panel code { background: #2a2d42; padding: 0 4px; }
+  .panel .tldr { border-left: 4px solid var(--accent); padding-left: 8px; font-weight: 700; }
+  .empty { color: var(--muted); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+  .card { border: 2px solid var(--border); padding: 8px 10px; background: var(--bg); }
+  .card h4 { margin: 0 0 4px; font-size: 14px; }
+  .card .verdict { color: var(--muted); font-size: 13px; }
+  .card ul { list-style: none; padding: 0; margin: 6px 0 0; }
+  .card li { font-size: 13px; margin-bottom: 6px; }
+  .sev { display: inline-block; min-width: 58px; margin-right: 6px; padding: 0 4px; font-size: 11px; font-weight: 700; text-align: center; color: #14151c; }
+  .sev.critical { background: #ff6b6b; }
+  .sev.major { background: #ffb347; }
+  .sev.minor { background: #9ad1ff; }
+  .sev.note { background: var(--muted); }
+  .counts { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1 id="topic">Model Debate</h1>
+    <span class="chip" id="phase">Connecting…</span>
+    <span class="chip offline" id="conn">offline</span>
+    <button type="button" id="pause" aria-pressed="false">Pause</button>
+    <button type="button" id="skip">Skip</button>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="canvas" width="160" height="90" role="img" aria-label="Pixel-art animation of Geppetto, Clark and Rocky debating"></canvas>
+    <div class="banner" id="banner" hidden></div>
+    <div class="bubble" id="bubble" hidden aria-live="polite"><span class="who" id="who"></span><span id="said"></span></div>
+  </div>
+  <section class="log" id="log" aria-label="Transcript"></section>
+  <section class="panel" aria-labelledby="synthesis-title">
+    <h2 id="synthesis-title">Synthesis</h2>
+    <div id="synthesis"><p class="empty">No synthesis yet.</p></div>
+  </section>
+  <section class="panel" aria-labelledby="reviews-title">
+    <h2 id="reviews-title">Reviews</h2>
+    <div id="reviews"><p class="empty">No reviews yet.</p></div>
+  </section>
+  <div class="dir" id="dir"></div>
+</main>
+<script>
+"use strict";
+const W = 160, H = 90, FLOOR = 78;
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+// 16x18 sprites. Letters map to the palette; "." is transparent.
+const CHARACTERS = {
+  "debate-gpt": {
+    name: "Geppetto", model: "GPT", cx: 30, color: "#10a37f",
+    palette: { G: "#10a37f", A: "#c9a26b", W: "#f4f4f4", S: "#f1c27d", K: "#222222", N: "#e0a96d", M: "#7a3b2e", B: "#5b3a29" },
+    eyes: [[5, 5], [10, 5]], lid: "S",
+    sprite: [
+      "................",
+      ".....GGGGGG.....",
+      "....GGGGGGGG....",
+      "...GGGGGGGGGG...",
+      "...WSSSSSSSSW...",
+      "..WWSKSSSSKSWW..",
+      "..WWSSSSSSSSWW..",
+      "...WSSSNNSSSW...",
+      "...WWWWWWWWWW...",
+      "....WWWMMWWW....",
+      ".....WWWWWW.....",
+      "......WWWW......",
+      "....GGGGGGGG....",
+      "...GGGAAAAGGG...",
+      "..SGGGAAAAGGGS..",
+      "..SGGGAAAAGGGS..",
+      "....BBB..BBB....",
+      "....BBB..BBB....",
+    ],
+  },
+  "debate-opus": {
+    name: "Clark", model: "Claude Opus", cx: 80, color: "#d97757",
+    palette: { H: "#1d1d2b", S: "#f1c27d", L: "#333333", K: "#222222", O: "#d97757", T: "#2b4c7e", D: "#2d2d3a", M: "#7a3b2e" },
+    eyes: [[5, 6], [10, 6]], lid: "S",
+    sprite: [
+      "................",
+      "....HHHHHHHH....",
+      "...HHHHHHHHHH...",
+      "...HHSSSSSHHH...",
+      "...HSSSSSSSSH...",
+      "...SLLLSSLLLS...",
+      "...SLKLLLLKLS...",
+      "...SLLLSSLLLS...",
+      "....SSSSSSSS....",
+      "....SSSMMSSS....",
+      ".....SSSSSS.....",
+      "......SSSS......",
+      "....OOOOOOOO....",
+      "...OOOOTTOOOO...",
+      "..SOOOOTTOOOOS..",
+      "..SOOOOOOOOOOS..",
+      "....DDD..DDD....",
+      "....DDD..DDD....",
+    ],
+  },
+  "debate-grok": {
+    name: "Rocky", model: "Grok Fast", cx: 130, color: "#a9b0bc",
+    palette: { R: "#8a8f98", C: "#5d626b", Y: "#d8f3ff", D: "#5d626b", M: "#2b2e33" },
+    eyes: [[4, 5], [5, 5], [4, 6], [5, 6], [10, 5], [11, 5], [10, 6], [11, 6]], lid: "R",
+    sprite: [
+      "................",
+      "................",
+      ".....RRRRRR.....",
+      "...RRRRRRRRRR...",
+      "..RRRCRRRRRRRR..",
+      "..RRYYRRRRYYRR..",
+      "..RRYYRRRRYYRR..",
+      "..RRRRRRRCRRRR..",
+      "..RRRRRRRRRRRR..",
+      "..RRRRRMMRRRRR..",
+      "...RRRRRRRRRR...",
+      "....RRRRRRRR....",
+      "..DDRRRRRRRRDD..",
+      ".DDRRRCRRRRRRDD.",
+      ".DD.RRRRRRRR.DD.",
+      "....RRRRRRRR....",
+      "....DDD..DDD....",
+      "....DDD..DDD....",
+    ],
+  },
+};
+const MOUTH = [[7, 9], [8, 9]];
+const SPRITE_H = 18;
+
+const $ = (id) => document.getElementById(id);
+const canvas = $("canvas"), ctx = canvas.getContext("2d");
+const stage = $("stage"), bubble = $("bubble"), banner = $("banner");
+
+for (const [id, c] of Object.entries(CHARACTERS)) {
+  c.blinkAt = performance.now() + 1000 + Math.random() * 3000;
+  c.tag = document.createElement("span");
+  c.tag.className = "tag";
+  c.tag.style.left = (c.cx / W * 100) + "%";
+  c.tag.style.color = c.color;
+  c.tag.textContent = c.name + " (" + c.model + ")";
+  stage.append(c.tag);
+}
+
+let state = { thinking: [], events: [] };
+const played = new Set();
+const queue = [];
+let current = null; // { speaker, target, text, label, shown, started }
+let paused = false;
+let lastStep = 0;
+
+function connect() {
+  const source = new EventSource("/events");
+  source.onopen = () => { $("conn").className = "chip live"; $("conn").textContent = "live"; };
+  source.onerror = () => { $("conn").className = "chip offline"; $("conn").textContent = "reconnecting"; };
+  source.addEventListener("state", (e) => applyState(JSON.parse(e.data)));
+}
+
+function applyState(next) {
+  state = next;
+  $("topic").textContent = next.topic || "Model Debate";
+  $("phase").textContent = next.phase;
+  $("dir").textContent = next.dir;
+  // Pinned model + thinking level from the server replace the built-in family names.
+  for (const p of next.panelists || []) {
+    const c = CHARACTERS[p.id];
+    if (!c || !p.model) continue;
+    c.model = p.model;
+    c.tag.textContent = c.name + " (" + c.model + ")";
+  }
+  for (const ev of next.events) {
+    if (played.has(ev.key)) continue;
+    played.add(ev.key);
+    for (const line of ev.lines) queue.push({ speaker: ev.speaker, target: line.target || null, text: line.text, label: ev.label });
+  }
+  if (next.synthesis) renderMarkdown($("synthesis"), next.synthesis);
+  if (next.reviews && next.reviews.length) renderReviews($("reviews"), next.reviews);
+}
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+// Bold, inline code and http(s) links only; everything else stays plain text.
+function inline(parent, text) {
+  const re = /\*\*([^*]+)\*\*|`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
+  let last = 0, m;
+  while ((m = re.exec(text))) {
+    parent.append(text.slice(last, m.index));
+    if (m[1] !== undefined) parent.append(el("strong", "", m[1]));
+    else if (m[2] !== undefined) parent.append(el("code", "", m[2]));
+    else {
+      const a = el("a", "", m[3]);
+      a.href = m[4];
+      a.target = "_blank";
+      a.rel = "noopener";
+      parent.append(a);
+    }
+    last = re.lastIndex;
+  }
+  parent.append(text.slice(last));
+}
+
+function renderMarkdown(box, md) {
+  box.replaceChildren();
+  let list = null;
+  for (const raw of md.replace(/^---\n[\s\S]*?\n---\n/, "").split("\n")) {
+    const line = raw.trimEnd();
+    const item = line.match(/^\s*(?:([-*+])|\d+[.)])\s+(.*)/);
+    if (item) {
+      const tag = item[1] ? "UL" : "OL";
+      if (!list || list.tagName !== tag) { list = el(tag); box.append(list); }
+      const li = el("li");
+      inline(li, item[2]);
+      list.append(li);
+      continue;
+    }
+    list = null;
+    if (!line.trim()) continue;
+    const heading = line.match(/^(#{1,6})\s+(.*)/);
+    const tldr = /^TL;DR\s*[:：]/i.test(line);
+    const node = el(heading ? "h" + Math.min(6, heading[1].length + 2) : "p", tldr ? "tldr" : "");
+    inline(node, heading ? heading[2] : line);
+    box.append(node);
+  }
+}
+
+function renderReviews(box, reviews) {
+  box.replaceChildren();
+  const rounds = [...new Set(reviews.map((r) => r.round))];
+  for (const round of rounds) {
+    const inRound = reviews.filter((r) => r.round === round);
+    const counts = { critical: 0, major: 0, minor: 0 };
+    for (const r of inRound) for (const f of r.findings) if (f.severity) counts[f.severity]++;
+    const title = el("h3", "", "Review " + round);
+    title.append(el("span", "counts", "critical " + counts.critical + " · major " + counts.major + " · minor " + counts.minor));
+    const cards = el("div", "cards");
+    for (const r of inRound) {
+      const c = CHARACTERS[r.speaker];
+      const card = el("article", "card");
+      const name = el("h4", "", c ? c.name + " (" + c.model + ")" : r.speaker);
+      if (c) name.style.color = c.color;
+      card.append(name);
+      if (r.verdict) card.append(el("p", "verdict", r.verdict));
+      const ul = el("ul");
+      for (const f of r.findings) {
+        const li = el("li");
+        li.append(el("span", "sev " + (f.severity || "note"), f.severity || "note"), f.text);
+        ul.append(li);
+      }
+      card.append(ul);
+      cards.append(card);
+    }
+    box.append(title, cards);
+  }
+}
+
+function nameOf(id) { return CHARACTERS[id] ? CHARACTERS[id].name : ""; }
+
+function log(item) {
+  const p = document.createElement("p");
+  const meta = document.createElement("span");
+  meta.className = "meta";
+  const who = item.speaker ? nameOf(item.speaker) + (item.target ? " → " + nameOf(item.target) : "") : "Narrator";
+  meta.textContent = "[" + item.label + "] " + who + ": ";
+  p.append(meta, item.text);
+  const box = $("log");
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 24;
+  box.append(p);
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+
+function holdMs(text) { return 1800 + text.length * 45; }
+
+function step(now) {
+  if (current) {
+    const typing = reduceMotion.matches ? Infinity : (now - current.started) / 30;
+    current.shown = Math.min(current.text.length, Math.floor(typing));
+    if (current.shown >= current.text.length && now - current.started > current.text.length * 30 + holdMs(current.text)) {
+      current = null;
+    }
+  }
+  if (!current && queue.length) {
+    current = Object.assign(queue.shift(), { shown: 0, started: now });
+    log(current);
+  }
+}
+
+function renderBubble() {
+  if (!current) { bubble.hidden = true; banner.hidden = true; return; }
+  const text = current.text.slice(0, current.shown);
+  if (!current.speaker) {
+    bubble.hidden = true;
+    banner.hidden = false;
+    banner.textContent = "[" + current.label + "] " + text;
+    return;
+  }
+  banner.hidden = true;
+  const c = CHARACTERS[current.speaker];
+  bubble.hidden = false;
+  $("who").textContent = c.name + (current.target ? " → " + nameOf(current.target) : "") + " · " + current.label;
+  $("who").style.color = c.color;
+  $("said").textContent = text;
+  const sw = stage.clientWidth, sh = stage.clientHeight;
+  const anchor = c.cx / W * sw;
+  const left = Math.max(8, Math.min(sw - bubble.offsetWidth - 8, anchor - bubble.offsetWidth / 2));
+  bubble.style.left = left + "px";
+  bubble.style.bottom = ((H - (FLOOR - SPRITE_H) + 10) / H * sh) + "px";
+  bubble.style.setProperty("--tail", (anchor - left) + "px");
+}
+
+function px(x, y, color, w = 1, h = 1) { ctx.fillStyle = color; ctx.fillRect(x, y, w, h); }
+
+function drawBackground() {
+  px(0, 0, "#262a40", W, FLOOR);
+  for (let x = 0; x < W; x += 8) px(x, 20, "#2d3250", 4, 1);
+  for (let x = 0; x < W; x += 4) {
+    for (let y = FLOOR; y < H; y += 4) px(x, y, ((x + y) / 4) % 2 ? "#3b3524" : "#463f2b", 4, 4);
+  }
+  px(0, FLOOR, "#5a5137", W, 1);
+}
+
+function drawCharacter(id, c, now) {
+  const speaking = current && current.speaker === id;
+  const targeted = current && current.target === id;
+  const thinking = !speaking && !targeted && state.thinking.includes(id);
+  const motion = !reduceMotion.matches && !paused;
+  const tick = Math.floor(now / 160);
+  let dy = 0;
+  if (motion && speaking) dy = tick % 2 ? -2 : 0;
+  else if (motion) dy = Math.floor(now / 600 + c.cx) % 2 ? -1 : 0;
+  const x0 = c.cx - 8, y0 = FLOOR - SPRITE_H + dy;
+
+  px(c.cx - 6, FLOOR - 1, "rgba(0,0,0,0.35)", 12, 2);
+  c.sprite.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const k = row[x];
+      if (k !== ".") px(x0 + x, y0 + y, c.palette[k]);
+    }
+  });
+  if (motion && now > c.blinkAt) {
+    for (const [x, y] of c.eyes) px(x0 + x, y0 + y, c.palette[c.lid]);
+    if (now > c.blinkAt + 140) c.blinkAt = now + 2500 + Math.random() * 3500;
+  }
+  if (speaking && (!motion || tick % 2)) {
+    for (const [x, y] of MOUTH) { px(x0 + x, y0 + y, "#2a0f0a"); px(x0 + x, y0 + y + 1, "#2a0f0a"); }
+  }
+  if (thinking) {
+    const lit = motion ? Math.floor(now / 350) % 3 : -1;
+    for (let i = 0; i < 3; i++) px(c.cx - 5 + i * 4, y0 - 5, i === lit ? "#ffffff" : "#8a8fb0", 2, 2);
+  }
+  if (targeted) {
+    const flash = !motion || Math.floor(now / 400) % 2;
+    if (flash) { px(c.cx - 1, y0 - 10, "#ffd166", 2, 5); px(c.cx - 1, y0 - 4, "#ffd166", 2, 2); }
+  }
+}
+
+function frame(now) {
+  if (!paused && now - lastStep > 33) { step(now); lastStep = now; }
+  drawBackground();
+  for (const [id, c] of Object.entries(CHARACTERS)) drawCharacter(id, c, now);
+  renderBubble();
+  requestAnimationFrame(frame);
+}
+
+$("pause").addEventListener("click", (e) => {
+  paused = !paused;
+  e.currentTarget.textContent = paused ? "Play" : "Pause";
+  e.currentTarget.setAttribute("aria-pressed", String(paused));
+  if (!paused && current) current.started = performance.now() - current.shown * 30;
+});
+$("skip").addEventListener("click", () => {
+  current = null;
+  while (queue.length) log(queue.shift());
+});
+
+connect();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
