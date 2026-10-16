@@ -112,8 +112,8 @@
     <span class="chip offline" id="conn">offline</span>
     <button type="button" id="pause" aria-pressed="false">Pause</button>
     <button type="button" id="clear" disabled title="Empty the panels below (enabled once the debate has finished)">Clear</button>
-    <button type="button" id="replay" title="Replay the whole debate from the brief">Replay</button>
-    <button type="button" id="speed" title="Playback speed">Speed 1×</button>
+    <button type="button" id="replay" disabled title="Replay the whole debate from the brief (enabled once the debate has finished)">Replay</button>
+    <button type="button" id="speed" disabled title="Playback speed (enabled while a replay is playing)">Speed 1×</button>
   </header>
   <div class="stage" id="stage">
     <canvas id="canvas" width="160" height="90" role="img" aria-label="Pixel-art animation of Geppetto, Clark and Rocky debating"></canvas>
@@ -413,7 +413,8 @@ const revealed = new Set();
 const queue = [];
 let current = null; // { speaker, target, text, label, shown, started }
 let paused = false;
-let speed = 1; // 1×, 2× or 4×: scales typing, hold time and Grogu's flight
+let speed = 1; // 1×, 2× or 4× during a replay; live debates always play at 1×
+let replaying = false;
 const charMs = () => 30 / speed;
 let lastStep = 0;
 
@@ -750,7 +751,12 @@ function frame(now) {
   for (const [id, c] of Object.entries(CHARACTERS)) drawCharacter(id, c, now);
   for (const n of Object.keys(NARRATORS)) drawNarrator(n, now);
   renderBubble();
-  $("clear").disabled = !debateFinished();
+  const finished = debateFinished();
+  // A replay ends when playback has caught up again; speed then returns to 1× for live play.
+  if (replaying && finished) { replaying = false; setSpeed(1); }
+  $("clear").disabled = !finished;
+  $("replay").disabled = !finished;
+  $("speed").disabled = !replaying;
   requestAnimationFrame(frame);
 }
 
@@ -769,6 +775,8 @@ function debateFinished() {
 // Clear: empty the transcript and every panel below the stage. Played files stay played, so
 // nothing re-queues; Replay brings it all back.
 $("clear").addEventListener("click", () => {
+  replaying = false;
+  setSpeed(1);
   current = null;
   queue.length = 0;
   flyers = resetFlyers();
@@ -779,6 +787,7 @@ $("clear").addEventListener("click", () => {
 // Replay: forget what has been played and run every finished file again from the brief
 // (Round 1 → facts → Round 2 → synthesis → reviews), at the current speed.
 $("replay").addEventListener("click", () => {
+  replaying = true;
   current = null;
   queue.length = 0;
   played.clear();
@@ -801,14 +810,15 @@ $("copy-synthesis").addEventListener("click", async (e) => {
   setTimeout(() => { button.textContent = "Copy"; }, 1500);
 });
 const SPEEDS = [1, 2, 4];
-$("speed").addEventListener("click", (e) => {
+function setSpeed(next) {
   const now = performance.now();
   const shownAt = current ? current.shown : 0;
-  speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
-  e.currentTarget.textContent = "Speed " + speed + "×";
+  speed = next;
+  $("speed").textContent = "Speed " + speed + "×";
   // Keep the current line where it is instead of jumping ahead or back.
   if (current) current.started = now - shownAt * charMs();
-});
+}
+$("speed").addEventListener("click", () => setSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]));
 
 connect();
 requestAnimationFrame(frame);
