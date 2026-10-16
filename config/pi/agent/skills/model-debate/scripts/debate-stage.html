@@ -17,7 +17,11 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--fg); }
-  main { max-width: 980px; margin: 0 auto; padding: 16px; display: grid; gap: 12px; }
+  main { max-width: 980px; margin: 0 auto; padding: 0 16px 16px; display: grid; gap: 12px; }
+  /* Header controls and the stage stay pinned while the panels below scroll. The stage shrinks
+     to keep at least ~30% of the window for the panels. */
+  .pinned { position: sticky; top: 0; z-index: 10; display: grid; gap: 12px; padding: 16px 0 12px; background: var(--bg); box-shadow: 0 8px 12px -10px rgb(0 0 0 / 0.6); }
+  .pinned .stage { width: min(100%, calc((70vh - 90px) * 16 / 9)); justify-self: center; }
   header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
   h1 { font-size: 16px; margin: 0; flex: 1 1 320px; overflow-wrap: anywhere; }
   .chip { border: 2px solid var(--border); padding: 2px 8px; font-size: 13px; background: var(--panel); }
@@ -27,7 +31,8 @@
     font: inherit; font-size: 13px; color: var(--fg); background: var(--panel);
     border: 2px solid var(--border); padding: 2px 10px; cursor: pointer;
   }
-  button:hover, button:focus-visible { border-color: var(--accent); outline: none; }
+  button:hover:not(:disabled), button:focus-visible { border-color: var(--accent); outline: none; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
   .stage { position: relative; aspect-ratio: 16 / 9; border: 4px solid var(--border); overflow: hidden; }
   canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
   .bubble {
@@ -41,13 +46,14 @@
     content: ""; position: absolute; bottom: -12px; left: var(--tail, 50%); translate: -50% 0;
     border: 6px solid transparent; border-top-color: #1b1b24;
   }
+  .bubble.from-top::after { top: -12px; bottom: auto; border-top-color: transparent; border-bottom-color: #1b1b24; }
   .banner {
     position: absolute; top: 8px; left: 50%; translate: -50% 0; max-width: 80%;
     padding: 6px 12px; font-size: 13px; text-align: center; background: rgb(20 21 28 / 0.85);
     border: 2px solid var(--accent); color: var(--accent);
   }
   .banner[hidden] { display: none; }
-  .tag { position: absolute; bottom: 2%; translate: -50% 0; font-size: 13px; font-weight: 700; text-shadow: 2px 2px 0 #000; white-space: nowrap; }
+  .tag { position: absolute; bottom: 2%; translate: -50% 0; font-size: 13px; font-weight: 700; text-shadow: 2px 2px 0 #000; white-space: pre; text-align: center; line-height: 1.3; }
   .log {
     border: 2px solid var(--border); background: var(--panel); padding: 8px 12px;
     max-height: 260px; overflow-y: auto; font-size: 13px; line-height: 1.5;
@@ -55,8 +61,25 @@
   .log p { margin: 0 0 4px; }
   .log .meta { color: var(--muted); }
   .dir { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  .badge { display: inline-block; margin-left: 6px; padding: 0 5px; font-size: 11px; font-weight: 700; color: #14151c; vertical-align: 1px; }
+  .badge[hidden] { display: none; }
+  .badge.keep { background: #9ad1ff; }
+  .badge.revise, .badge.withdraw { background: #ffd166; }
+  .bubble.fact-verified { border-color: #2f9e44; }
+  .bubble.fact-refuted { border-color: #d62828; }
+  .bubble.fact-open { border-color: #868e96; }
+  .facts { list-style: none; padding: 0; margin: 0; }
+  .facts li { margin-bottom: 8px; }
+  .facts .quote { display: block; color: var(--muted); font-size: 13px; }
+  .fact-mark { display: inline-block; min-width: 76px; margin-right: 6px; padding: 0 4px; font-size: 11px; font-weight: 700; text-align: center; color: #14151c; }
+  .fact-mark.verified { background: #6bd968; }
+  .fact-mark.refuted { background: #ff6b6b; }
+  .fact-mark.open { background: var(--muted); }
   .panel { border: 2px solid var(--border); background: var(--panel); padding: 10px 14px; font-size: 14px; line-height: 1.55; }
   .panel h2 { font-size: 15px; margin: 0 0 8px; color: var(--accent); }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .panel-head h2 { margin: 0; }
+  .panel-head button[hidden] { display: none; }
   .panel h3 { font-size: 14px; margin: 12px 0 6px; }
   .panel h4, .panel h5, .panel h6 { font-size: 13px; margin: 10px 0 4px; }
   .panel p { margin: 0 0 6px; }
@@ -82,21 +105,32 @@
 </head>
 <body>
 <main>
+  <div class="pinned">
   <header>
     <h1 id="topic">Model Debate</h1>
     <span class="chip" id="phase">Connecting…</span>
     <span class="chip offline" id="conn">offline</span>
     <button type="button" id="pause" aria-pressed="false">Pause</button>
-    <button type="button" id="skip">Skip</button>
+    <button type="button" id="clear" disabled title="Empty the panels below (enabled once the debate has finished)">Clear</button>
+    <button type="button" id="replay" title="Replay the whole debate from the brief">Replay</button>
+    <button type="button" id="speed" title="Playback speed">Speed 1×</button>
   </header>
   <div class="stage" id="stage">
     <canvas id="canvas" width="160" height="90" role="img" aria-label="Pixel-art animation of Geppetto, Clark and Rocky debating"></canvas>
     <div class="banner" id="banner" hidden></div>
-    <div class="bubble" id="bubble" hidden aria-live="polite"><span class="who" id="who"></span><span id="said"></span></div>
+    <div class="bubble" id="bubble" hidden aria-live="polite"><span class="who"><span id="who"></span><span class="badge" id="badge" hidden></span></span><span id="said"></span></div>
+  </div>
   </div>
   <section class="log" id="log" aria-label="Transcript"></section>
+  <section class="panel" aria-labelledby="facts-title">
+    <h2 id="facts-title">Fact check</h2>
+    <div id="facts"><p class="empty">No facts checked yet.</p></div>
+  </section>
   <section class="panel" aria-labelledby="synthesis-title">
-    <h2 id="synthesis-title">Synthesis</h2>
+    <div class="panel-head">
+      <h2 id="synthesis-title">Synthesis</h2>
+      <button type="button" id="copy-synthesis" hidden title="Copy synthesis.md as Markdown">Copy</button>
+    </div>
     <div id="synthesis"><p class="empty">No synthesis yet.</p></div>
   </section>
   <section class="panel" aria-labelledby="reviews-title">
@@ -115,7 +149,7 @@ const CHARACTERS = {
   "debate-gpt": {
     name: "Geppetto", model: "GPT", cx: 30, color: "#10a37f",
     palette: { G: "#10a37f", A: "#c9a26b", W: "#f4f4f4", S: "#f1c27d", K: "#222222", N: "#e0a96d", M: "#7a3b2e", B: "#5b3a29" },
-    eyes: [[5, 5], [10, 5]], lid: "S",
+    eyes: [[5, 5], [10, 5]], lid: "S", eyeBg: "S",
     sprite: [
       "................",
       ".....GGGGGG.....",
@@ -139,57 +173,223 @@ const CHARACTERS = {
   },
   "debate-opus": {
     name: "Clark", model: "Claude Opus", cx: 80, color: "#d97757",
-    palette: { H: "#1d1d2b", S: "#f1c27d", L: "#333333", K: "#222222", O: "#d97757", T: "#2b4c7e", D: "#2d2d3a", M: "#7a3b2e" },
-    eyes: [[5, 6], [10, 6]], lid: "S",
+    // Superman: forehead curl, blue suit, red cape and boots, yellow-red "S" shield.
+    palette: { H: "#1a1a2e", S: "#f1c27d", K: "#222222", N: "#d9a066", M: "#7a3b2e", B: "#2457c5", R: "#d62828", Y: "#ffd23f" },
+    eyes: [[5, 6], [10, 6]], lid: "S", eyeBg: "S",
     sprite: [
       "................",
       "....HHHHHHHH....",
       "...HHHHHHHHHH...",
-      "...HHSSSSSHHH...",
+      "...HHSSSHSSHH...",
       "...HSSSSSSSSH...",
-      "...SLLLSSLLLS...",
-      "...SLKLLLLKLS...",
-      "...SLLLSSLLLS...",
+      "...SSSSSSSSSS...",
+      "...SSKSSSSKSS...",
+      "...SSSSNNSSSS...",
       "....SSSSSSSS....",
       "....SSSMMSSS....",
       ".....SSSSSS.....",
       "......SSSS......",
-      "....OOOOOOOO....",
-      "...OOOOTTOOOO...",
-      "..SOOOOTTOOOOS..",
-      "..SOOOOOOOOOOS..",
-      "....DDD..DDD....",
-      "....DDD..DDD....",
+      ".RRBBBBBBBBBBRR.",
+      ".RRBBBRYYRBBBRR.",
+      ".RSBBBYRRYBBBSR.",
+      ".RRBBBRRRRBBBRR.",
+      ".RR.BBB..BBB.RR.",
+      "....RRR..RRR....",
     ],
   },
   "debate-grok": {
     name: "Rocky", model: "Grok Fast", cx: 130, color: "#a9b0bc",
-    palette: { R: "#8a8f98", C: "#5d626b", Y: "#d8f3ff", D: "#5d626b", M: "#2b2e33" },
-    eyes: [[4, 5], [5, 5], [4, 6], [5, 6], [10, 5], [11, 5], [10, 6], [11, 6]], lid: "R",
+    // Rocky Balboa: short dark hair, heavy brows, red gloves, blue trunks with white trim.
+    palette: { H: "#2b1d14", S: "#e0ac7e", K: "#1b1b1b", N: "#c48a5e", M: "#6b2a1e", G: "#c1121f", W: "#f4f4f4", T: "#1f3a93", D: "#1b1b1b" },
+    eyes: [[6, 6], [9, 6]], lid: "S", eyeBg: "S",
     sprite: [
       "................",
       "................",
-      ".....RRRRRR.....",
-      "...RRRRRRRRRR...",
-      "..RRRCRRRRRRRR..",
-      "..RRYYRRRRYYRR..",
-      "..RRYYRRRRYYRR..",
-      "..RRRRRRRCRRRR..",
-      "..RRRRRRRRRRRR..",
-      "..RRRRRMMRRRRR..",
-      "...RRRRRRRRRR...",
-      "....RRRRRRRR....",
-      "..DDRRRRRRRRDD..",
-      ".DDRRRCRRRRRRDD.",
-      ".DD.RRRRRRRR.DD.",
-      "....RRRRRRRR....",
-      "....DDD..DDD....",
+      ".....HHHHHH.....",
+      "....HHHHHHHH....",
+      "....HSSSSSSH....",
+      "...SHHHSSHHHS...",
+      "...SSSKSSKSSS...",
+      "...SSSSNNSSSS...",
+      "....SSSNNSSS....",
+      "....SSSMMSSS....",
+      ".....SSSSSS.....",
+      "......SSSS......",
+      "..SSSSSSSSSSSS..",
+      ".GGSSSNSSNSSSGG.",
+      "GGGGSSSSSSSSGGGG",
+      ".GG.WTTTTTTW.GG.",
+      "....SSS..SSS....",
       "....DDD..DDD....",
     ],
   },
 };
 const MOUTH = [[7, 9], [8, 9]];
 const SPRITE_H = 18;
+const HEAD_ROWS = 12; // sprite rows above the shoulders; they turn toward the partner
+
+// Flying narrators. Inspector Gadget drops in from the top on his Go Go Gadget Copter for each
+// fact check and flies back up; Grogu flies in from the left in his hover pram for the synthesis
+// and leaves to the right; an AI robot jets in from the right to pose the question (brief) and
+// jets back out. All dock at the top centre and speak in their own bubble.
+const NARRATORS = {
+  robot: {
+    name: "AI Robot", labelColor: "#1f8a9e", cx: 80, top: 5, path: "from-right", lid: "K",
+    palette: { L: "#ff5c5c", A: "#9aa3ad", H: "#c9d1d9", h: "#8b949e", K: "#2b2f36", E: "#5ce1e6", M: "#2b2f36", B: "#7d8590", C: "#ffd166", J: "#555555" },
+    eyes: [[4, 5], [5, 5], [10, 5], [11, 5]],
+    mouth: [[5, 7], [6, 7], [7, 7], [8, 7], [9, 7], [10, 7]],
+    sprite: [
+      "........L.......",
+      "........A.......",
+      "...HHHHHHHHHH...",
+      "..HHHHHHHHHHHH..",
+      "..HKKKKKKKKKKH..",
+      "..HKEEKKKKEEKH..",
+      "..HKKKKKKKKKKH..",
+      "..HHHMMMMMMHHH..",
+      "...hhhhhhhhhh...",
+      "......hhhh......",
+      "..BBBBBBBBBBBB..",
+      ".hBBBBBCCBBBBBh.",
+      ".hBBBBBCCBBBBBh.",
+      "..BBBBBBBBBBBB..",
+      "...JJJ....JJJ...",
+    ],
+    blinkAt: 0,
+  },
+  gadget: {
+    name: "Inspector Gadget", labelColor: "#6b5a2e", cx: 80, top: 5, path: "vertical", lid: "S",
+    palette: { H: "#8d8f94", h: "#4a4a4f", S: "#f1c27d", K: "#222222", N: "#d9a066", M: "#7a3b2e", C: "#c9a66b", c: "#a8874f", B: "#6b4f2a", T: "#6e7078", D: "#2b2b2b" },
+    eyes: [[5, 4], [10, 4]],
+    mouth: [[7, 6], [8, 6]],
+    sprite: [
+      "....HHHHHHHH....",
+      "...HHHHHHHHHH...",
+      ".HHhhhhhhhhhhHH.",
+      "....SSSSSSSS....",
+      "....SKSSSSKS....",
+      "....SSSNNSSS....",
+      "....SSSMMSSS....",
+      ".....SSSSSS.....",
+      "....CCCSSCCC....",
+      "...CCCCCCCCCC...",
+      "..CCCCcCCcCCCC..",
+      "..SCCCcCCcCCCS..",
+      "...CCCBBBBCCC...",
+      "...CCCCCCCCCC...",
+      "....CCCCCCCC....",
+      "....TTT..TTT....",
+      "....TTT..TTT....",
+      "...DDDD..DDDD...",
+    ],
+    blinkAt: 0,
+  },
+  grogu: {
+    name: "Grogu", labelColor: "#4f8a3d", cx: 80, top: 3, path: "horizontal", lid: "G",
+    palette: { G: "#8fbf7a", D: "#6a9a5a", P: "#e8a6a0", K: "#111111", W: "#ffffff", S: "#c9ced6", s: "#8a9099", L: "#7fd4ff" },
+    eyes: [[6, 4], [7, 4], [12, 4], [13, 4], [6, 5], [12, 5]],
+    mouth: [[9, 7], [10, 7]],
+    sprite: [
+      "......GGGGGGGG......",
+      ".....GGGGGGGGGG.....",
+      "GG..GGGGGGGGGGGG..GG",
+      "GPGGGGGGGGGGGGGGGGPG",
+      ".GPPGGKKGGGGKKGGPPG.",
+      "..GGGGKWGGGGKWGGGG..",
+      "....GGGGGDDGGGGG....",
+      ".....GGGGDDGGGG.....",
+      ".SSSSSSSSSSSSSSSSSS.",
+      "SSSLSSSSSSSSSSSSLSSS",
+      ".sSSSSSSSSSSSSSSSSs.",
+      "..ssssssssssssssss..",
+    ],
+    blinkAt: 0,
+  },
+};
+const FLY_MS = 1600;
+const narratorOf = (key) =>
+  key === "brief.md" ? "robot" : key === "synthesis.md" ? "grogu" : key.startsWith("facts.md#") ? "gadget" : null;
+// at: 0 = off-screen before entering, 1 = docked, 2 = off-screen after leaving.
+const resetFlyers = () => Object.fromEntries(Object.keys(NARRATORS).map((n) => [n, { mode: "gone", at: 0, t0: 0 }]));
+let flyers = resetFlyers();
+
+function fly(n, mode, now) { flyers[n] = { mode, at: mode === "enter" ? 0 : 1, t0: now }; }
+
+function updateFlyers(now) {
+  for (const f of Object.values(flyers)) {
+    if (f.mode !== "enter" && f.mode !== "exit") continue;
+    const p = reduceMotion.matches ? 1 : Math.min(1, (now - f.t0) / (FLY_MS / speed));
+    f.at = f.mode === "enter" ? 1 - (1 - p) ** 3 : 1 + p ** 3;
+    if (p >= 1) f.mode = f.mode === "enter" ? "talk" : "gone";
+  }
+}
+
+function narratorPos(N, at) {
+  const lerp = (a, b, t) => a + (b - a) * t;
+  if (N.path === "horizontal") {
+    const x = at <= 1 ? lerp(-14, N.cx, at) : lerp(N.cx, W + 14, at - 1);
+    return { x, y: N.top };
+  }
+  if (N.path === "from-right") {
+    const x = at <= 1 ? lerp(W + 14, N.cx, at) : lerp(N.cx, W + 14, at - 1);
+    return { x, y: N.top };
+  }
+  const off = -N.sprite.length - 6;
+  return { x: N.cx, y: at <= 1 ? lerp(off, N.top, at) : lerp(N.top, off, at - 1) };
+}
+
+function drawNarrator(n, now) {
+  const f = flyers[n], N = NARRATORS[n];
+  if (f.mode === "gone") return;
+  const motion = !reduceMotion.matches && !paused;
+  const flying = f.mode === "enter" || f.mode === "exit";
+  const bob = motion ? Math.round(Math.sin(now / 400)) : 0;
+  const pos = narratorPos(N, f.at);
+  const w = N.sprite[0].length;
+  const x0 = Math.round(pos.x) - w / 2, y0 = Math.round(pos.y) + bob;
+  if (n === "grogu" && flying && motion) {
+    // Thruster glow trails behind the pram (he always flies left to right).
+    const t = Math.floor(now / 80) % 2;
+    px(x0 - 2 - t, y0 + 9, "#ffb347", 2 + t, 1);
+    px(x0 - 1, y0 + 10, "#ffd166", 1, 1);
+  }
+  if (n === "gadget") {
+    // Go Go Gadget Copter: a pole out of the hat and spinning blades.
+    px(x0 + 7, y0 - 2, "#555555", 2, 2);
+    const spin = motion ? Math.floor(now / 70) % 2 : 0;
+    if (spin) px(x0 + 1, y0 - 3, "#e6e6e6", 14, 1);
+    else px(x0 + 5, y0 - 3, "#e6e6e6", 6, 1);
+  }
+  if (n === "robot" && motion) {
+    // Thrusters fire while flying, idle glow while hovering.
+    const t = Math.floor(now / 80) % 2;
+    const flame = flying ? 2 + t : t;
+    if (flame) for (const fx of [4, 11]) px(x0 + fx, y0 + 15, flying ? "#ffb347" : "#7fd4ff", 1, flame);
+  }
+  N.sprite.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) if (row[x] !== ".") px(x0 + x, y0 + y, N.palette[row[x]]);
+  });
+  // Robot's antenna light blinks.
+  if (n === "robot" && motion && Math.floor(now / 500) % 2) px(x0 + 8, y0, "#ffd1d1");
+  if (motion && now > N.blinkAt) {
+    for (const [x, y] of N.eyes) px(x0 + x, y0 + y, N.palette[N.lid]);
+    if (now > N.blinkAt + 160) N.blinkAt = now + 3000 + Math.random() * 3000;
+  }
+  const talking = current && current.narrator === n;
+  const mouthColor = { grogu: "#3d5a33", gadget: "#3a1a12", robot: "#5ce1e6" }[n];
+  if (talking && (!motion || Math.floor(now / 160) % 2)) for (const [x, y] of N.mouth) px(x0 + x, y0 + y, mouthColor);
+  // Repulsor shimmer under Grogu's pram while it hovers.
+  if (n === "grogu" && motion && !flying) for (let i = 0; i < 3; i++) px(x0 + 5 + i * 5, y0 + 13 + ((Math.floor(now / 200) + i) % 2), "#cfe8ff");
+}
+
+// -1 = look left, 1 = look right, 0 = face the audience. The speaker looks at the panelist it
+// addresses and that panelist looks back; everyone else faces forward.
+function facing(id, c) {
+  if (!current || !current.speaker || !current.target) return 0;
+  const other = current.speaker === id ? current.target : current.target === id ? current.speaker : null;
+  const o = other && CHARACTERS[other];
+  return o ? Math.sign(o.cx - c.cx) : 0;
+}
 
 const $ = (id) => document.getElementById(id);
 const canvas = $("canvas"), ctx = canvas.getContext("2d");
@@ -205,11 +405,16 @@ for (const [id, c] of Object.entries(CHARACTERS)) {
   stage.append(c.tag);
 }
 
-let state = { thinking: [], events: [] };
+let state = { thinking: [], events: [], status: {} };
 const played = new Set();
+// Panels below the stage show only what has already been spoken on stage, so a replay
+// rebuilds them in step with the bubbles. Keys match the server's event keys.
+const revealed = new Set();
 const queue = [];
 let current = null; // { speaker, target, text, label, shown, started }
 let paused = false;
+let speed = 1; // 1×, 2× or 4×: scales typing, hold time and Grogu's flight
+const charMs = () => 30 / speed;
 let lastStep = 0;
 
 function connect() {
@@ -227,17 +432,78 @@ function applyState(next) {
   // Pinned model + thinking level from the server replace the built-in family names.
   for (const p of next.panelists || []) {
     const c = CHARACTERS[p.id];
-    if (!c || !p.model) continue;
-    c.model = p.model;
-    c.tag.textContent = c.name + " (" + c.model + ")";
+    if (c && p.model) c.model = p.model;
   }
+  updateTags();
   for (const ev of next.events) {
     if (played.has(ev.key)) continue;
     played.add(ev.key);
-    for (const line of ev.lines) queue.push({ speaker: ev.speaker, target: line.target || null, text: line.text, label: ev.label });
+    for (const line of ev.lines) {
+      queue.push({ key: ev.key, speaker: ev.speaker, target: line.target || null, text: line.text, label: ev.label, stance: ev.stance || null, narrator: narratorOf(ev.key) });
+    }
   }
-  if (next.synthesis) renderMarkdown($("synthesis"), next.synthesis);
-  if (next.reviews && next.reviews.length) renderReviews($("reviews"), next.reviews);
+  renderPanels();
+}
+
+function renderPanels() {
+  const facts = (state.facts || []).filter((f) => revealed.has("facts.md#" + f.id + ":" + f.status + ":" + f.claim));
+  renderFacts($("facts"), facts);
+  const synthesisShown = Boolean(state.synthesis && revealed.has("synthesis.md"));
+  if (synthesisShown) renderMarkdown($("synthesis"), state.synthesis);
+  else $("synthesis").replaceChildren(el("p", "empty", "No synthesis yet."));
+  $("copy-synthesis").hidden = !synthesisShown;
+  const reviews = (state.reviews || []).filter((r) => revealed.has("review" + r.round + "-" + r.speaker + ".md"));
+  if (reviews.length) renderReviews($("reviews"), reviews);
+  else $("reviews").replaceChildren(el("p", "empty", "No reviews yet."));
+}
+
+const STANCE_LABEL = { keep: "Holds", revise: "Revises", withdraw: "Withdraws" };
+
+// "Rocky (Grok 4.7 Fast, medium) · 1:23" while running; retries and failures from status.json.
+function updateTags() {
+  const now = Date.now();
+  for (const [id, c] of Object.entries(CHARACTERS)) {
+    const s = (state.status || {})[id];
+    let suffix = "";
+    if (s && (s.state === "running" || s.state === "retrying") && s.startedAt) {
+      const sec = Math.max(0, Math.floor((now - Date.parse(s.startedAt)) / 1000));
+      suffix = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+      if (s.state === "retrying" || (s.attempt || 1) > 1) suffix += " · retry #" + (s.attempt || 2);
+    } else if (s && s.state === "failed") {
+      suffix = "failed";
+    }
+    c.tag.textContent = c.name + " (" + c.model + ")" + (suffix ? "\n" + suffix : "");
+  }
+}
+setInterval(updateTags, 1000);
+
+function renderFacts(box, facts) {
+  if (!facts.length) { box.replaceChildren(el("p", "empty", "No facts checked yet.")); return; }
+  box.replaceChildren();
+  const ul = el("ul", "facts");
+  for (const f of facts) {
+    const li = el("li");
+    li.append(el("span", "fact-mark " + f.status, f.status.toUpperCase()), el("strong", "", f.id + " "), f.claim);
+    const meta = [f.quote && "“" + f.quote + "”", f.scope && "scope: " + f.scope, f.raiser && "raised by " + nameOf(f.raiser)].filter(Boolean);
+    if (meta.length || f.source) {
+      const q = el("span", "quote", meta.join(" · ") + (f.source ? (meta.length ? " · " : "") : ""));
+      if (f.source) {
+        const url = f.source.match(/https?:\/\/\S+/);
+        if (url) {
+          const a = el("a", "", "source");
+          a.href = url[0];
+          a.target = "_blank";
+          a.rel = "noopener";
+          q.append(a);
+        } else {
+          q.append(f.source);
+        }
+      }
+      li.append(q);
+    }
+    ul.append(li);
+  }
+  box.append(ul);
 }
 
 function el(tag, className, text) {
@@ -327,39 +593,82 @@ function log(item) {
   const p = document.createElement("p");
   const meta = document.createElement("span");
   meta.className = "meta";
-  const who = item.speaker ? nameOf(item.speaker) + (item.target ? " → " + nameOf(item.target) : "") : "Narrator";
-  meta.textContent = "[" + item.label + "] " + who + ": ";
+  const who = item.speaker ? nameOf(item.speaker) + (item.target ? " → " + nameOf(item.target) : "") : item.narrator ? NARRATORS[item.narrator].name : "Narrator";
+  meta.textContent = "[" + item.label + "] " + who + (item.stance ? " (" + STANCE_LABEL[item.stance.kind] + ")" : "") + ": ";
   p.append(meta, item.text);
+  if (item.stance && item.stance.reason) p.append(el("span", "meta", " — " + item.stance.reason));
   const box = $("log");
   const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 24;
   box.append(p);
   if (atBottom) box.scrollTop = box.scrollHeight;
+  if (item.key && !revealed.has(item.key)) {
+    revealed.add(item.key);
+    renderPanels();
+  }
 }
 
 function holdMs(text) { return 1800 + text.length * 45; }
 
 function step(now) {
   if (current) {
-    const typing = reduceMotion.matches ? Infinity : (now - current.started) / 30;
+    const typing = reduceMotion.matches ? Infinity : (now - current.started) / charMs();
     current.shown = Math.min(current.text.length, Math.floor(typing));
-    if (current.shown >= current.text.length && now - current.started > current.text.length * 30 + holdMs(current.text)) {
+    if (current.shown >= current.text.length && now - current.started > current.text.length * charMs() + holdMs(current.text) / speed) {
       current = null;
     }
   }
+  updateFlyers(now);
   if (!current && queue.length) {
+    // A narrator's lines wait until he has docked; whoever is docked but not speaking next leaves.
+    const want = queue[0].narrator;
+    for (const n of Object.keys(flyers)) if (n !== want && flyers[n].mode === "talk") fly(n, "exit", now);
+    if (want && flyers[want].mode !== "talk") {
+      if (flyers[want].mode !== "enter") fly(want, "enter", now);
+      return;
+    }
     current = Object.assign(queue.shift(), { shown: 0, started: now });
     log(current);
   }
+  if (!current && !queue.length) for (const n of Object.keys(flyers)) if (flyers[n].mode === "talk") fly(n, "exit", now);
 }
 
 function renderBubble() {
   if (!current) { bubble.hidden = true; banner.hidden = true; return; }
   const text = current.text.slice(0, current.shown);
+  if (current.narrator) {
+    const N = NARRATORS[current.narrator];
+    banner.hidden = true;
+    $("badge").hidden = true;
+    bubble.hidden = false;
+    const verdict = current.text.match(/^[✓✗?] (VERIFIED|REFUTED|OPEN)/);
+    bubble.className = "bubble from-top" + (verdict ? " fact-" + verdict[1].toLowerCase() : "");
+    $("who").textContent = N.name + " · " + current.label;
+    $("who").style.color = N.labelColor;
+    $("said").textContent = text;
+    const sw = stage.clientWidth, sh = stage.clientHeight;
+    const anchor = N.cx / W * sw;
+    const left = Math.max(8, Math.min(sw - bubble.offsetWidth - 8, anchor - bubble.offsetWidth / 2));
+    bubble.style.left = left + "px";
+    bubble.style.bottom = "auto";
+    bubble.style.top = ((N.top + N.sprite.length + 4) / H * sh) + "px";
+    bubble.style.setProperty("--tail", (anchor - left) + "px");
+    return;
+  }
+  bubble.className = "bubble";
+  bubble.style.top = "auto";
   if (!current.speaker) {
     bubble.hidden = true;
     banner.hidden = false;
+    banner.className = "banner";
     banner.textContent = "[" + current.label + "] " + text;
     return;
+  }
+  const badge = $("badge");
+  badge.hidden = !current.stance;
+  if (current.stance) {
+    badge.className = "badge " + current.stance.kind;
+    badge.textContent = STANCE_LABEL[current.stance.kind];
+    badge.title = current.stance.reason || "";
   }
   banner.hidden = true;
   const c = CHARACTERS[current.speaker];
@@ -396,20 +705,34 @@ function drawCharacter(id, c, now) {
   if (motion && speaking) dy = tick % 2 ? -2 : 0;
   else if (motion) dy = Math.floor(now / 600 + c.cx) % 2 ? -1 : 0;
   const x0 = c.cx - 8, y0 = FLOOR - SPRITE_H + dy;
+  const dir = facing(id, c);
 
   px(c.cx - 6, FLOOR - 1, "rgba(0,0,0,0.35)", 12, 2);
   c.sprite.forEach((row, y) => {
+    const hx = y < HEAD_ROWS ? dir : 0;
     for (let x = 0; x < row.length; x++) {
       const k = row[x];
-      if (k !== ".") px(x0 + x, y0 + y, c.palette[k]);
+      if (k !== ".") px(x0 + x + hx, y0 + y, c.palette[k]);
     }
   });
+  // Gaze: pupils move one more pixel toward the partner, on top of the turned head.
+  if (dir) {
+    for (const [x, y] of c.eyes) px(x0 + x + dir, y0 + y, c.palette[c.eyeBg]);
+    for (const [x, y] of c.eyes) px(x0 + x + 2 * dir, y0 + y, c.palette[c.sprite[y][x]]);
+  }
+  const ex = dir ? 2 * dir : 0;
   if (motion && now > c.blinkAt) {
-    for (const [x, y] of c.eyes) px(x0 + x, y0 + y, c.palette[c.lid]);
+    for (const [x, y] of c.eyes) px(x0 + x + ex, y0 + y, c.palette[c.lid]);
     if (now > c.blinkAt + 140) c.blinkAt = now + 2500 + Math.random() * 3500;
   }
   if (speaking && (!motion || tick % 2)) {
-    for (const [x, y] of MOUTH) { px(x0 + x, y0 + y, "#2a0f0a"); px(x0 + x, y0 + y + 1, "#2a0f0a"); }
+    for (const [x, y] of MOUTH) { px(x0 + x + dir, y0 + y, "#2a0f0a"); px(x0 + x + dir, y0 + y + 1, "#2a0f0a"); }
+  }
+  // Changing one's mind is a highlight, not a penalty: a lightbulb over the speaker's head.
+  if (speaking && current.stance && current.stance.kind !== "keep") {
+    const glow = !motion || Math.floor(now / 300) % 2;
+    px(c.cx - 2, y0 - 10, glow ? "#fff3b0" : "#ffd166", 4, 4);
+    px(c.cx - 1, y0 - 6, "#c9c9c9", 2, 2);
   }
   if (thinking) {
     const lit = motion ? Math.floor(now / 350) % 3 : -1;
@@ -425,7 +748,9 @@ function frame(now) {
   if (!paused && now - lastStep > 33) { step(now); lastStep = now; }
   drawBackground();
   for (const [id, c] of Object.entries(CHARACTERS)) drawCharacter(id, c, now);
+  for (const n of Object.keys(NARRATORS)) drawNarrator(n, now);
   renderBubble();
+  $("clear").disabled = !debateFinished();
   requestAnimationFrame(frame);
 }
 
@@ -433,11 +758,56 @@ $("pause").addEventListener("click", (e) => {
   paused = !paused;
   e.currentTarget.textContent = paused ? "Play" : "Pause";
   e.currentTarget.setAttribute("aria-pressed", String(paused));
-  if (!paused && current) current.started = performance.now() - current.shown * 30;
+  if (!paused && current) current.started = performance.now() - current.shown * charMs();
 });
-$("skip").addEventListener("click", () => {
+// The debate is finished when the synthesis exists, no panelist is still working and the stage
+// has played everything (nobody speaking, nothing queued, no narrator on screen).
+function debateFinished() {
+  return Boolean(state.synthesis) && !(state.thinking || []).length && !current && !queue.length &&
+    Object.values(flyers).every((f) => f.mode === "gone");
+}
+// Clear: empty the transcript and every panel below the stage. Played files stay played, so
+// nothing re-queues; Replay brings it all back.
+$("clear").addEventListener("click", () => {
   current = null;
-  while (queue.length) log(queue.shift());
+  queue.length = 0;
+  flyers = resetFlyers();
+  $("log").replaceChildren();
+  revealed.clear();
+  renderPanels();
+});
+// Replay: forget what has been played and run every finished file again from the brief
+// (Round 1 → facts → Round 2 → synthesis → reviews), at the current speed.
+$("replay").addEventListener("click", () => {
+  current = null;
+  queue.length = 0;
+  played.clear();
+  flyers = resetFlyers();
+  $("log").replaceChildren();
+  revealed.clear();
+  renderPanels();
+  if (paused) $("pause").click();
+  applyState(state);
+});
+// Copies the synthesis exactly as written (Markdown), not the rendered text.
+$("copy-synthesis").addEventListener("click", async (e) => {
+  const button = e.currentTarget;
+  try {
+    await navigator.clipboard.writeText(state.synthesis || "");
+    button.textContent = "Copied!";
+  } catch {
+    button.textContent = "Copy failed";
+  }
+  setTimeout(() => { button.textContent = "Copy"; }, 1500);
+});
+const SPEEDS = [1, 2, 4];
+$("speed").addEventListener("click", (e) => {
+  const now = performance.now();
+  const shownAt = current ? current.shown : 0;
+  speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
+  e.currentTarget.textContent = "Speed " + speed + "×";
+  // Keep the current line where it is instead of jumping ahead or back.
+  if (current) current.started = now - shownAt * charMs();
 });
 
 connect();
