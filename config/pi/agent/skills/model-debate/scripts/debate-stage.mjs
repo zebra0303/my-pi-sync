@@ -132,7 +132,9 @@ function parseFacts(text) {
       .filter(Boolean);
     const field = (name) => parts.map((p) => p.match(new RegExp(`^${name}\\s*[:：]\\s*(.*)$`))?.[1]).find((v) => v !== undefined)?.trim() ?? '';
     const raiser = field('제기').split(/[^\p{L}]+/u).map((n) => NICKNAMES[n.toLowerCase()]).find(Boolean) ?? null;
-    facts.push({ id: id.toUpperCase(), status: status.toLowerCase(), claim: clean(parts[0]), source: field('출처'), quote, scope: field('범위'), raiser });
+    // `이전: open` (or `was: open`) records the status before a recheck, so the change can be shown.
+    const was = (field('이전') || field('was')).toLowerCase().match(/verified|refuted|open/)?.[0] ?? null;
+    facts.push({ id: id.toUpperCase(), status: status.toLowerCase(), was, claim: clean(parts[0]), source: field('출처'), quote, scope: field('범위'), raiser });
   }
   return facts;
 }
@@ -219,11 +221,12 @@ function snapshot() {
   const events = [];
   let topic = '';
   let synthesis = null;
+  let answer = null;
   let facts = [];
   const reviews = [];
-  let phase = { order: -1, label: 'Waiting for brief', kind: null, n: 0 };
-  const advance = (order, label, kind, n) => {
-    if (order > phase.order) phase = { order, label, kind, n };
+  let phase = { order: -1, kind: null, n: 0 };
+  const advance = (order, kind, n) => {
+    if (order > phase.order) phase = { order, kind, n };
   };
   for (const { f, mtime } of files) {
     if (f === 'brief.md') {
@@ -231,14 +234,18 @@ function snapshot() {
       const heading = text.split('\n').find((l) => /^#\s/.test(l)) ?? text.split('\n').find((l) => l.trim());
       topic = clip(clean(heading ?? ''));
       events.push({ key: f, order: 0, mtime, speaker: null, label: 'Brief', lines: [{ text: topic || 'Brief ready' }] });
-      advance(0, 'Preparing Round 1', 'brief', 0);
+      advance(0, 'brief', 0);
+      continue;
+    }
+    if (f === 'answer.md') {
+      answer = read(f);
       continue;
     }
     if (f === 'synthesis.md') {
       synthesis = read(f);
       const { lines } = extractLines(synthesis);
       events.push({ key: f, order: 10, mtime, speaker: null, label: 'Synthesis', lines: lines.map((text) => ({ text })) });
-      advance(10, 'Synthesis · drafting', 'synthesis', 0);
+      advance(10, 'synthesis', 0);
       continue;
     }
     if (f === 'facts.md') {
@@ -250,7 +257,12 @@ function snapshot() {
           mtime,
           speaker: null,
           label: 'Fact check',
-          lines: [{ text: clip(`${FACT_MARK[fact.status]} ${fact.id} · ${fact.claim}`), target: fact.status === 'refuted' ? fact.raiser : null }],
+          lines: [
+            {
+              text: clip(`${FACT_MARK[fact.status]} ${fact.id}${fact.was && fact.was !== fact.status ? ` · ${fact.was} → ${fact.status}` : ''} · ${fact.claim}`),
+              target: fact.status === 'refuted' ? fact.raiser : null,
+            },
+          ],
         });
       }
       continue;
@@ -260,7 +272,7 @@ function snapshot() {
     const [, kind, nStr, agent] = m;
     const n = Number(nStr);
     const order = phaseOrder(kind, n);
-    advance(order, phaseLabel(kind, n), kind, n);
+    advance(order, kind, n);
     // Play a panelist file only once it is final: TL;DR plus bullets, and either marked completed
     // in status.json for the current round or (older rounds / no status.json) unchanged for SETTLE_MS.
     const live = status && status.kind === kind && status.n === n;
@@ -283,7 +295,7 @@ function snapshot() {
       lines: lines.map((line) => ({ text: line, target: critique ? (mentionedPanelist(line, agent) ?? fileTarget) : null })),
     });
   }
-  if (status) advance(phaseOrder(status.kind, status.n), phaseLabel(status.kind, status.n), status.kind, status.n);
+  if (status) advance(phaseOrder(status.kind, status.n), status.kind, status.n);
   events.sort((a, b) => a.order - b.order || a.mtime - b.mtime);
 
   let thinking = [];
@@ -296,17 +308,16 @@ function snapshot() {
     thinking = PANELISTS.map((p) => p.id).filter((id) =>
       live ? ['running', 'retrying'].includes(status.panels[id]?.state) : !events.some((e) => e.key === `${prefix}${id}.md`),
     );
-    if (!thinking.length) phase.label += ' done';
   }
   return {
     dir: debateDir,
     topic,
-    phase: phase.label,
     thinking,
     status: panelStatus,
     panelists: PANELISTS.map(({ id, name }) => ({ id, name, model: models[id] })),
     events: events.map(({ key, speaker, label, lines, stance }) => ({ key, speaker, label, lines, stance: stance ?? null })),
     synthesis,
+    answer,
     facts,
     reviews: reviews.sort((a, b) => a.round - b.round || PANELISTS.findIndex((p) => p.id === a.speaker) - PANELISTS.findIndex((p) => p.id === b.speaker)),
   };
