@@ -134,15 +134,18 @@ function parseFacts(text) {
     // Take the quote out first so a dash inside it cannot split the fields.
     const quote = rest.match(/["“]([^"”]+)["”]/)?.[1] ?? '';
     const parts = rest
-      .replace(/(?:원문\s*[:：]\s*)?["“][^"”]+["”]/, '')
-      .split(/\s*[—–]\s*|\s+-\s+/)
+      .replace(/(?:(?:원문|quote)\s*[:：]\s*)?["“][^"”]+["”]/i, '')
+      // Fields are separated by a spaced dash; ranges such as "2023–2024" stay intact.
+      .split(/\s+[—–-]\s+/)
       .map((p) => p.trim().replace(/^[—–-]\s*/, ''))
       .filter(Boolean);
-    const field = (name) => parts.map((p) => p.match(new RegExp(`^${name}\\s*[:：]\\s*(.*)$`))?.[1]).find((v) => v !== undefined)?.trim() ?? '';
-    const raiser = field('제기').split(/[^\p{L}]+/u).map((n) => NICKNAMES[n.toLowerCase()]).find(Boolean) ?? null;
+    const field = (name) => parts.map((p) => p.match(new RegExp(`^${name}\\s*[:：]\\s*(.*)$`, 'i'))?.[1]).find((v) => v !== undefined)?.trim() ?? '';
+    // Korean or English field names, following the question's language.
+    const either = (ko, en) => field(ko) || field(en);
+    const raiser = either('제기', 'raised by').split(/[^\p{L}]+/u).map((n) => NICKNAMES[n.toLowerCase()]).find(Boolean) ?? null;
     // `이전: open` (or `was: open`) records the status before a recheck, so the change can be shown.
-    const was = (field('이전') || field('was')).toLowerCase().match(/verified|refuted|open/)?.[0] ?? null;
-    facts.push({ id: id.toUpperCase(), status: status.toLowerCase(), was, claim: clean(parts[0]), source: field('출처'), quote, scope: field('범위'), raiser });
+    const was = either('이전', 'was').toLowerCase().match(/verified|refuted|open/)?.[0] ?? null;
+    facts.push({ id: id.toUpperCase(), status: status.toLowerCase(), was, claim: clean(parts[0]), source: either('출처', 'source'), quote, scope: either('범위', 'scope'), raiser });
   }
   return facts;
 }

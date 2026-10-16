@@ -452,6 +452,8 @@ const played = new Set();
 const revealed = new Set();
 const queue = [];
 let current = null; // { speaker, target, text, label, shown, started }
+// After the finale line, the three narrators and the finale bubble stay on stage until Clear/Replay.
+let ending = null;
 let paused = false;
 let speed = 1; // 1×, 2× or 4× during a replay; live debates always play at 1×
 let replaying = false;
@@ -705,6 +707,7 @@ function step(now) {
     const typing = reduceMotion.matches ? Infinity : (now - current.started) / charMs();
     current.shown = Math.min(current.text.length, Math.floor(typing));
     if (current.shown >= current.text.length && now - current.started > current.text.length * charMs() + holdMs(current.text) / speed) {
+      if (isFinale(current)) ending = current;
       current = null;
     }
   }
@@ -720,30 +723,32 @@ function step(now) {
       return;
     }
     current = Object.assign(queue.shift(), { shown: 0, started: now });
+    if (!isFinale(current)) ending = null;
     log(current);
   }
-  if (!current && !queue.length) for (const n of Object.keys(flyers)) if (flyers[n].mode === "talk") fly(n, "exit", now);
+  if (!current && !queue.length && !ending) for (const n of Object.keys(flyers)) if (flyers[n].mode === "talk") fly(n, "exit", now);
 }
 
 function renderBubble() {
-  if (!current) { bubble.hidden = true; banner.hidden = true; setAnswerLink(false); return; }
-  const text = current.text.slice(0, current.shown);
-  if (current.narrator) {
-    const N = NARRATORS[current.narrator];
-    const cast = castOf(current);
-    const finale = isFinale(current);
+  const item = current || ending;
+  if (!item) { bubble.hidden = true; banner.hidden = true; setAnswerLink(false); return; }
+  const text = item.text.slice(0, item.shown);
+  if (item.narrator) {
+    const N = NARRATORS[item.narrator];
+    const cast = castOf(item);
+    const finale = isFinale(item);
     banner.hidden = true;
     $("badge").hidden = true;
     bubble.hidden = false;
-    const verdict = current.text.match(/^[✓✗?] (VERIFIED|REFUTED|OPEN)/);
+    const verdict = item.text.match(/^[✓✗?] (VERIFIED|REFUTED|OPEN)/);
     bubble.className = "bubble from-top" + (finale ? " finale" : verdict ? " fact-" + verdict[1].toLowerCase() : "");
     setAnswerLink(finale);
-    $("who").textContent = castNames(current) + " · " + current.label;
+    $("who").textContent = castNames(item) + " · " + item.label;
     $("who").style.color = N.labelColor;
     $("said").textContent = text;
     const sw = stage.clientWidth, sh = stage.clientHeight;
     // The finale bubble sits centred between the two; otherwise under the single narrator.
-    const anchor = (finale ? W / 2 : flyers[current.narrator].cx ?? N.cx) / W * sw;
+    const anchor = (finale ? W / 2 : flyers[item.narrator].cx ?? N.cx) / W * sw;
     const left = Math.max(8, Math.min(sw - bubble.offsetWidth - 8, anchor - bubble.offsetWidth / 2));
     bubble.style.left = left + "px";
     bubble.style.bottom = "auto";
@@ -755,24 +760,24 @@ function renderBubble() {
   bubble.className = "bubble";
   setAnswerLink(false);
   bubble.style.top = "auto";
-  if (!current.speaker) {
+  if (!item.speaker) {
     bubble.hidden = true;
     banner.hidden = false;
     banner.className = "banner";
-    banner.textContent = "[" + current.label + "] " + text;
+    banner.textContent = "[" + item.label + "] " + text;
     return;
   }
   const badge = $("badge");
-  badge.hidden = !current.stance;
-  if (current.stance) {
-    badge.className = "badge " + current.stance.kind;
-    badge.textContent = STANCE_LABEL[current.stance.kind];
-    badge.title = current.stance.reason || "";
+  badge.hidden = !item.stance;
+  if (item.stance) {
+    badge.className = "badge " + item.stance.kind;
+    badge.textContent = STANCE_LABEL[item.stance.kind];
+    badge.title = item.stance.reason || "";
   }
   banner.hidden = true;
-  const c = CHARACTERS[current.speaker];
+  const c = CHARACTERS[item.speaker];
   bubble.hidden = false;
-  $("who").textContent = c.name + (current.target ? " → " + nameOf(current.target) : "") + " · " + current.label;
+  $("who").textContent = c.name + (item.target ? " → " + nameOf(item.target) : "") + " · " + item.label;
   $("who").style.color = c.color;
   $("said").textContent = text;
   const sw = stage.clientWidth, sh = stage.clientHeight;
@@ -902,7 +907,7 @@ $("pause").addEventListener("click", (e) => {
 // has played everything (nobody speaking, nothing queued, no narrator on screen).
 function debateFinished() {
   return Boolean(state.synthesis) && !(state.thinking || []).length && !current && !queue.length &&
-    Object.values(flyers).every((f) => f.mode === "gone");
+    Object.entries(flyers).every(([n, f]) => f.mode === "gone" || (ending && n in FINALE_CAST && f.mode === "talk"));
 }
 // Clear: empty the transcript and every panel below the stage. Played files stay played, so
 // nothing re-queues; Replay brings it all back.
@@ -913,6 +918,7 @@ $("clear").addEventListener("click", () => {
   queue.length = 0;
   flyers = resetFlyers();
   sparks.length = 0;
+  ending = null;
   $("log").replaceChildren();
   revealed.clear();
   renderPanels();
@@ -926,6 +932,7 @@ $("replay").addEventListener("click", () => {
   played.clear();
   flyers = resetFlyers();
   sparks.length = 0;
+  ending = null;
   $("log").replaceChildren();
   revealed.clear();
   renderPanels();
@@ -958,7 +965,8 @@ function setAnswerLink(on) {
   }
 }
 function showAnswerPanel() {
-  if (!current || !isFinale(current)) return;
+  const item = current || ending;
+  if (!item || !isFinale(item)) return;
   const panel = $("answer").closest(".panel");
   const pinned = document.querySelector(".pinned").offsetHeight;
   const top = panel.getBoundingClientRect().top + scrollY - pinned - 12;
