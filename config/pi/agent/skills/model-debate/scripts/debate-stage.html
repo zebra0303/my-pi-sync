@@ -47,6 +47,23 @@
     border: 6px solid transparent; border-top-color: #1b1b24;
   }
   .bubble.from-top::after { top: -12px; bottom: auto; border-top-color: transparent; border-bottom-color: #1b1b24; }
+  /* Finale (answer.md): gold frame, glow and a pop-in, while fireworks burst on the canvas. */
+  .bubble.finale {
+    max-width: 62%; font-size: 15px; background: #fffbe6; border-color: #ffd23f;
+    box-shadow: 0 0 0 3px #1b1b24, 0 0 22px 6px rgb(255 210 63 / 0.55);
+    animation: finale-pop 0.6s ease-out;
+  }
+  .bubble.finale::after { border-bottom-color: #ffd23f; }
+  .bubble.finale .who { font-size: 13px; }
+  @keyframes finale-pop { 0% { scale: 0.5; opacity: 0; } 70% { scale: 1.08; opacity: 1; } 100% { scale: 1; } }
+  @media (prefers-reduced-motion: reduce) { .bubble.finale { animation: none; } }
+  /* The finale bubble links to the Final Answer panel below. */
+  .bubble.finale { cursor: pointer; }
+  .bubble.finale:hover, .bubble.finale:focus-visible { outline: 3px solid #ffd23f; outline-offset: 3px; }
+  .bubble.finale #said::after { content: "Click for the full answer ↓"; display: block; margin-top: 4px; font-size: 12px; font-weight: 700; color: #8a6d00; }
+  .panel.flash { animation: panel-flash 1.6s ease-out; }
+  @keyframes panel-flash { 0%, 40% { box-shadow: 0 0 0 3px #ffd23f, 0 0 24px 6px rgb(255 210 63 / 0.5); } 100% { box-shadow: none; } }
+  @media (prefers-reduced-motion: reduce) { .panel.flash { animation: none; } }
   .banner {
     position: absolute; top: 8px; left: 50%; translate: -50% 0; max-width: 80%;
     padding: 6px 12px; font-size: 13px; text-align: center; background: rgb(20 21 28 / 0.85);
@@ -320,12 +337,23 @@ const NARRATORS = {
 };
 const FLY_MS = 1600;
 const narratorOf = (key) =>
-  key === "brief.md" ? "robot" : key === "synthesis.md" ? "grogu" : key.startsWith("facts.md#") ? "gadget" : null;
+  key === "brief.md" ? "robot" : key === "synthesis.md" || key === "answer.md" ? "grogu" : key.startsWith("facts.md#") ? "gadget" : null;
+// The finale: all three narrators fly in along their usual paths (Grogu from the left, Gadget from
+// the top, Cuzi from the right) and dock side by side to deliver answer.md.
+const FINALE_CAST = { grogu: 42, gadget: 80, robot: 118 };
+const isFinale = (item) => item.key === "answer.md";
+const castOf = (item) => (isFinale(item) ? Object.keys(FINALE_CAST) : item.narrator ? [item.narrator] : []);
+const dockOf = (item, n) => (isFinale(item) ? FINALE_CAST[n] : NARRATORS[n].cx);
+// "Grogu, Inspector Gadget & Cuzi"
+const castNames = (item) => castOf(item).map((n) => NARRATORS[n].name).join(", ").replace(/, ([^,]+)$/, " & $1");
 // at: 0 = off-screen before entering, 1 = docked, 2 = off-screen after leaving.
 const resetFlyers = () => Object.fromEntries(Object.keys(NARRATORS).map((n) => [n, { mode: "gone", at: 0, t0: 0 }]));
 let flyers = resetFlyers();
 
-function fly(n, mode, now) { flyers[n] = { mode, at: mode === "enter" ? 0 : 1, t0: now }; }
+// cx: where the narrator docks; an exit leaves from wherever it docked.
+function fly(n, mode, now, cx) {
+  flyers[n] = { mode, at: mode === "enter" ? 0 : 1, t0: now, cx: cx ?? flyers[n].cx ?? NARRATORS[n].cx };
+}
 
 function updateFlyers(now) {
   for (const f of Object.values(flyers)) {
@@ -336,18 +364,18 @@ function updateFlyers(now) {
   }
 }
 
-function narratorPos(N, at) {
+function narratorPos(N, at, cx) {
   const lerp = (a, b, t) => a + (b - a) * t;
   if (N.path === "horizontal") {
-    const x = at <= 1 ? lerp(-14, N.cx, at) : lerp(N.cx, W + 14, at - 1);
+    const x = at <= 1 ? lerp(-14, cx, at) : lerp(cx, W + 14, at - 1);
     return { x, y: N.top };
   }
   if (N.path === "from-right") {
-    const x = at <= 1 ? lerp(W + 14, N.cx, at) : lerp(N.cx, W + 14, at - 1);
+    const x = at <= 1 ? lerp(W + 14, cx, at) : lerp(cx, W + 14, at - 1);
     return { x, y: N.top };
   }
   const off = -N.sprite.length - 6;
-  return { x: N.cx, y: at <= 1 ? lerp(off, N.top, at) : lerp(N.top, off, at - 1) };
+  return { x: cx, y: at <= 1 ? lerp(off, N.top, at) : lerp(N.top, off, at - 1) };
 }
 
 function drawNarrator(n, now) {
@@ -356,7 +384,7 @@ function drawNarrator(n, now) {
   const motion = !reduceMotion.matches && !paused;
   const flying = f.mode === "enter" || f.mode === "exit";
   const bob = motion ? Math.round(Math.sin(now / 400)) : 0;
-  const pos = narratorPos(N, f.at);
+  const pos = narratorPos(N, f.at, f.cx ?? N.cx);
   const w = N.sprite[0].length;
   const x0 = Math.round(pos.x) - w / 2, y0 = Math.round(pos.y) + bob;
   if (n === "grogu" && flying && motion) {
@@ -387,7 +415,7 @@ function drawNarrator(n, now) {
     for (const [x, y] of N.eyes) px(x0 + x, y0 + y, N.palette[N.lid]);
     if (now > N.blinkAt + 160) N.blinkAt = now + 3000 + Math.random() * 3000;
   }
-  const talking = current && current.narrator === n;
+  const talking = current && castOf(current).includes(n);
   const mouthColor = { grogu: "#3d5a33", gadget: "#3a1a12", robot: "#5ce1e6" }[n];
   if (talking && (!motion || Math.floor(now / 160) % 2)) for (const [x, y] of N.mouth) px(x0 + x, y0 + y, mouthColor);
   // Repulsor shimmer under Grogu's pram while it hovers.
@@ -427,7 +455,6 @@ let current = null; // { speaker, target, text, label, shown, started }
 let paused = false;
 let speed = 1; // 1×, 2× or 4× during a replay; live debates always play at 1×
 let replaying = false;
-let cleared = false; // after Clear, keep the panels blank until Replay
 const charMs = () => 30 / speed;
 let lastStep = 0;
 
@@ -468,7 +495,7 @@ function renderPanels() {
   const reviews = (state.reviews || []).filter((r) => revealed.has("review" + r.round + "-" + r.speaker + ".md"));
   if (reviews.length) renderReviews($("reviews"), reviews);
   else $("reviews").replaceChildren(el("p", "empty", "No reviews yet."));
-  // The final answer is the ending: it shows only once everything, reviews included, has played.
+  // The final answer is the ending: it shows when Grogu delivers it, after the reviews.
   const answerShown = Boolean(state.answer && revealed.has("answer.md"));
   if (answerShown) renderMarkdown($("answer"), state.answer);
   else $("answer").replaceChildren(el("p", "empty", "The final answer appears after the reviews."));
@@ -657,7 +684,7 @@ function log(item) {
   const p = document.createElement("p");
   const meta = document.createElement("span");
   meta.className = "meta";
-  const who = item.speaker ? nameOf(item.speaker) + (item.target ? " → " + nameOf(item.target) : "") : item.narrator ? NARRATORS[item.narrator].name : "Narrator";
+  const who = item.speaker ? nameOf(item.speaker) + (item.target ? " → " + nameOf(item.target) : "") : item.narrator ? castNames(item) : "Narrator";
   meta.textContent = "[" + item.label + "] " + who + (item.stance ? " (" + STANCE_LABEL[item.stance.kind] + ")" : "") + ": ";
   p.append(meta, item.text);
   if (item.stance && item.stance.reason) p.append(el("span", "meta", " — " + item.stance.reason));
@@ -683,11 +710,13 @@ function step(now) {
   }
   updateFlyers(now);
   if (!current && queue.length) {
-    // A narrator's lines wait until he has docked; whoever is docked but not speaking next leaves.
-    const want = queue[0].narrator;
-    for (const n of Object.keys(flyers)) if (n !== want && flyers[n].mode === "talk") fly(n, "exit", now);
-    if (want && flyers[want].mode !== "talk") {
-      if (flyers[want].mode !== "enter") fly(want, "enter", now);
+    // A narrator's lines wait until his whole cast has docked; whoever is docked but not needed leaves.
+    const next = queue[0];
+    const cast = castOf(next);
+    for (const n of Object.keys(flyers)) if (!cast.includes(n) && flyers[n].mode === "talk") fly(n, "exit", now);
+    const waiting = cast.filter((n) => flyers[n].mode !== "talk");
+    if (waiting.length) {
+      for (const n of waiting) if (flyers[n].mode !== "enter") fly(n, "enter", now, dockOf(next, n));
       return;
     }
     current = Object.assign(queue.shift(), { shown: 0, started: now });
@@ -697,28 +726,34 @@ function step(now) {
 }
 
 function renderBubble() {
-  if (!current) { bubble.hidden = true; banner.hidden = true; return; }
+  if (!current) { bubble.hidden = true; banner.hidden = true; setAnswerLink(false); return; }
   const text = current.text.slice(0, current.shown);
   if (current.narrator) {
     const N = NARRATORS[current.narrator];
+    const cast = castOf(current);
+    const finale = isFinale(current);
     banner.hidden = true;
     $("badge").hidden = true;
     bubble.hidden = false;
     const verdict = current.text.match(/^[✓✗?] (VERIFIED|REFUTED|OPEN)/);
-    bubble.className = "bubble from-top" + (verdict ? " fact-" + verdict[1].toLowerCase() : "");
-    $("who").textContent = N.name + " · " + current.label;
+    bubble.className = "bubble from-top" + (finale ? " finale" : verdict ? " fact-" + verdict[1].toLowerCase() : "");
+    setAnswerLink(finale);
+    $("who").textContent = castNames(current) + " · " + current.label;
     $("who").style.color = N.labelColor;
     $("said").textContent = text;
     const sw = stage.clientWidth, sh = stage.clientHeight;
-    const anchor = N.cx / W * sw;
+    // The finale bubble sits centred between the two; otherwise under the single narrator.
+    const anchor = (finale ? W / 2 : flyers[current.narrator].cx ?? N.cx) / W * sw;
     const left = Math.max(8, Math.min(sw - bubble.offsetWidth - 8, anchor - bubble.offsetWidth / 2));
     bubble.style.left = left + "px";
     bubble.style.bottom = "auto";
-    bubble.style.top = ((N.top + N.sprite.length + 4) / H * sh) + "px";
+    const bottom = Math.max(...cast.map((n) => NARRATORS[n].top + NARRATORS[n].sprite.length));
+    bubble.style.top = ((bottom + 4) / H * sh) + "px";
     bubble.style.setProperty("--tail", (anchor - left) + "px");
     return;
   }
   bubble.className = "bubble";
+  setAnswerLink(false);
   bubble.style.top = "auto";
   if (!current.speaker) {
     bubble.hidden = true;
@@ -808,17 +843,47 @@ function drawCharacter(id, c, now) {
   }
 }
 
+// Fireworks while the finale bubble is up: pixel bursts over the stage, falling and fading.
+// They freeze on Pause and never start with reduced motion.
+const SPARK_COLORS = ["#ffd23f", "#ff5c8a", "#5ce1e6", "#8fbf7a", "#c3b5ff", "#ffffff"];
+const sparks = [];
+let nextBurst = 0, lastSpark = 0;
+function updateFireworks(now) {
+  const dt = Math.min(50, now - lastSpark) * speed;
+  lastSpark = now;
+  if (!paused) {
+    const finale = current && isFinale(current) && !reduceMotion.matches;
+    if (!finale) nextBurst = 0;
+    else if (now >= nextBurst) {
+      const x = 14 + Math.random() * (W - 28), y = 6 + Math.random() * 26;
+      const color = SPARK_COLORS[Math.floor(Math.random() * SPARK_COLORS.length)];
+      for (let i = 0; i < 28; i++) {
+        const a = (i / 28) * Math.PI * 2, v = 0.016 + Math.random() * 0.016;
+        sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, color });
+      }
+      sparks.push({ x: x - 0.5, y: y - 0.5, vx: 0, vy: 0, life: 0.35, color: "#ffffff", size: 2 });
+      nextBurst = now + 420 / speed;
+    }
+    for (const s of sparks) {
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.vy += 0.00003 * dt;
+      s.life -= dt / 1100;
+    }
+    for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].life <= 0) sparks.splice(i, 1);
+  }
+  // Fading sparks twinkle before they go out.
+  for (const s of sparks) if (s.life > 0.3 || Math.floor(now / 90) % 2) px(Math.round(s.x), Math.round(s.y), s.color, s.size || 1, s.size || 1);
+}
+
 function frame(now) {
   if (!paused && now - lastStep > 33) { step(now); lastStep = now; }
   drawBackground();
+  updateFireworks(now);
   for (const [id, c] of Object.entries(CHARACTERS)) drawCharacter(id, c, now);
   for (const n of Object.keys(NARRATORS)) drawNarrator(n, now);
   renderBubble();
   const finished = debateFinished();
-  if (finished && !cleared && state.answer && revealed.has("synthesis.md") && !revealed.has("answer.md")) {
-    revealed.add("answer.md");
-    renderPanels();
-  }
   // A replay ends when playback has caught up again; speed then returns to 1× for live play.
   if (replaying && finished) { replaying = false; setSpeed(1); }
   $("clear").disabled = !finished;
@@ -842,12 +907,12 @@ function debateFinished() {
 // Clear: empty the transcript and every panel below the stage. Played files stay played, so
 // nothing re-queues; Replay brings it all back.
 $("clear").addEventListener("click", () => {
-  cleared = true;
   replaying = false;
   setSpeed(1);
   current = null;
   queue.length = 0;
   flyers = resetFlyers();
+  sparks.length = 0;
   $("log").replaceChildren();
   revealed.clear();
   renderPanels();
@@ -856,11 +921,11 @@ $("clear").addEventListener("click", () => {
 // (Round 1 → facts → Round 2 → synthesis → reviews), at the current speed.
 $("replay").addEventListener("click", () => {
   replaying = true;
-  cleared = false;
   current = null;
   queue.length = 0;
   played.clear();
   flyers = resetFlyers();
+  sparks.length = 0;
   $("log").replaceChildren();
   revealed.clear();
   renderPanels();
@@ -879,6 +944,33 @@ async function copyMarkdown(button, text) {
 }
 $("copy-synthesis").addEventListener("click", (e) => copyMarkdown(e.currentTarget, state.synthesis));
 $("copy-answer").addEventListener("click", (e) => copyMarkdown(e.currentTarget, state.answer));
+// The finale bubble works as a link: click (or Enter/Space) scrolls the page to the Final Answer
+// panel, just below the pinned header and stage, and flashes it.
+function setAnswerLink(on) {
+  if (on === (bubble.getAttribute("role") === "button")) return;
+  bubble.tabIndex = on ? 0 : -1;
+  if (on) {
+    bubble.setAttribute("role", "button");
+    bubble.title = "Show the full Final Answer below";
+  } else {
+    bubble.removeAttribute("role");
+    bubble.removeAttribute("title");
+  }
+}
+function showAnswerPanel() {
+  if (!current || !isFinale(current)) return;
+  const panel = $("answer").closest(".panel");
+  const pinned = document.querySelector(".pinned").offsetHeight;
+  const top = panel.getBoundingClientRect().top + scrollY - pinned - 12;
+  scrollTo({ top, behavior: reduceMotion.matches ? "auto" : "smooth" });
+  panel.classList.remove("flash");
+  void panel.offsetWidth; // restart the flash on repeated clicks
+  panel.classList.add("flash");
+}
+bubble.addEventListener("click", showAnswerPanel);
+bubble.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showAnswerPanel(); }
+});
 const SPEEDS = [1, 2, 4];
 function setSpeed(next) {
   const now = performance.now();

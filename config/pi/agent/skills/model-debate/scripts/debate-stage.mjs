@@ -113,6 +113,14 @@ function extractLines(text) {
   return { lines: lines.slice(0, MAX_LINES).map(clip), stance };
 }
 
+// The answer's one-line summary: its TL;DR line if it has one, else its first prose paragraph
+// (headings, tables, fences and bullets skipped), e.g. "Pick: Rosé … — the strongest …".
+function answerSummary(text) {
+  const raw = text.replace(/^---\n[\s\S]*?\n---\n/, '').split('\n').map((l) => l.trim());
+  const line = raw.find((l) => TLDR.test(l)) ?? raw.find((l) => l && !/^(?:#|\||```|---|>)/.test(l) && !BULLET.test(l));
+  return line ? clip(clean(line)) : null;
+}
+
 const NICKNAMES = Object.fromEntries(PANELISTS.map((p) => [p.name.toLowerCase(), p.id]));
 const FACT = /^\s*[-*]\s*(?:\*\*)?\[?(F\d+)\]?(?:\*\*)?\s*\[(verified|refuted|open)\]\s*(.+)$/i;
 
@@ -222,6 +230,7 @@ function snapshot() {
   let topic = '';
   let synthesis = null;
   let answer = null;
+  let answerMtime = 0;
   let facts = [];
   const reviews = [];
   let phase = { order: -1, kind: null, n: 0 };
@@ -239,6 +248,7 @@ function snapshot() {
     }
     if (f === 'answer.md') {
       answer = read(f);
+      answerMtime = mtime;
       continue;
     }
     if (f === 'synthesis.md') {
@@ -308,6 +318,12 @@ function snapshot() {
     thinking = PANELISTS.map((p) => p.id).filter((id) =>
       live ? ['running', 'retrying'].includes(status.panels[id]?.state) : !events.some((e) => e.key === `${prefix}${id}.md`),
     );
+  }
+  // Grogu returns with the final answer only after the last review round is done and answer.md
+  // has stopped changing, so the ending never plays before the reviews (or mid-revision).
+  if (answer && phase.kind === 'review' && !thinking.length && now - answerMtime >= SETTLE_MS) {
+    const summary = answerSummary(answer);
+    if (summary) events.push({ key: 'answer.md', order: 30, mtime: answerMtime, speaker: null, label: 'Final Answer', lines: [{ text: summary }] });
   }
   return {
     dir: debateDir,
