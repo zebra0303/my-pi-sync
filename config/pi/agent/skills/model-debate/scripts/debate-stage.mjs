@@ -364,6 +364,12 @@ setInterval(() => {
   for (const res of clients) res.write(': keepalive\n\n');
 }, 15000);
 
+// Opens a URL or folder with the OS default handler (Finder for a folder on macOS).
+function openWithOs(target, onError) {
+  const opener = { darwin: 'open', win32: 'explorer' }[process.platform] ?? 'xdg-open';
+  spawn(opener, [target], { stdio: 'ignore', detached: true }).on('error', onError).unref();
+}
+
 const server = createServer((req, res) => {
   if (req.url === '/events') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
@@ -371,6 +377,12 @@ const server = createServer((req, res) => {
     send(res, current);
     req.on('close', () => clients.delete(res));
     return;
+  }
+  // The page's folder path opens the debate folder; only the page itself may ask (same origin).
+  if (req.url === '/open-folder' && req.method === 'POST') {
+    if (req.headers.origin !== `http://127.0.0.1:${server.address().port}`) return res.writeHead(403).end();
+    openWithOs(debateDir, () => console.error(`Could not open ${debateDir}.`));
+    return res.writeHead(204).end();
   }
   if (req.url === '/' || req.url === '/index.html') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -384,8 +396,5 @@ server.listen(port, '127.0.0.1', () => {
   const url = `http://127.0.0.1:${server.address().port}/`;
   console.log(`Debate stage: ${url} (watching ${debateDir})`);
   if (args.includes('--no-open')) return;
-  const opener = { darwin: 'open', win32: 'explorer' }[process.platform] ?? 'xdg-open';
-  spawn(opener, [url], { stdio: 'ignore', detached: true })
-    .on('error', () => console.error(`Could not launch a browser; open ${url} manually.`))
-    .unref();
+  openWithOs(url, () => console.error(`Could not launch a browser; open ${url} manually.`));
 });

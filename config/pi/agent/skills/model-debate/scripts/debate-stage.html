@@ -4,36 +4,76 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Model Debate Stage</title>
+<!-- Pretendard for the whole page, Gamja Flower for the spoken text in speech bubbles only.
+     Offline, both fall back to the system sans-serif stack. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap">
 <style>
+  /* Page chrome follows Material Design 3 (baseline dark scheme, shape, type and elevation tokens,
+     hand-written as CSS variables: no library). The pixel-art stage and its bubbles keep their own look. */
   :root {
     color-scheme: dark;
-    --bg: #14151c;
-    --panel: #1f2130;
-    --border: #3a3d55;
-    --fg: #e8e8f0;
-    --muted: #9a9cb5;
-    --accent: #ffd166;
-    font-family: ui-monospace, "SF Mono", Menlo, "D2Coding", monospace;
+    --md-primary: #d0bcff; --md-on-primary: #381e72;
+    --md-primary-container: #4f378b; --md-on-primary-container: #eaddff;
+    --md-secondary: #ccc2dc;
+    --md-secondary-container: #4a4458; --md-on-secondary-container: #e8def8;
+    --md-tertiary-container: #633b48; --md-on-tertiary-container: #ffd8e4;
+    --md-error-container: #8c1d18; --md-on-error-container: #f9dedc;
+    /* Custom extended colors (M3 has no success/warning roles), tuned to the same tone steps. */
+    --md-success-container: #1f4d26; --md-on-success-container: #b7f1b4;
+    --md-warning-container: #5c4300; --md-on-warning-container: #ffdf9e;
+    --md-surface: #141218; --md-on-surface: #e6e0e9; --md-on-surface-variant: #cac4d0;
+    --md-surface-container-lowest: #0f0d13; --md-surface-container-low: #1d1b20;
+    --md-surface-container: #211f26; --md-surface-container-high: #2b2930; --md-surface-container-highest: #36343b;
+    --md-outline: #938f99; --md-outline-variant: #49454f;
+    --md-elevation-1: 0 1px 2px rgb(0 0 0 / 0.3), 0 1px 3px 1px rgb(0 0 0 / 0.15);
+    --md-elevation-2: 0 1px 2px rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
+    --accent: #ffd166; /* stage-only accent (banner, finale gold) */
+    --sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    font-family: var(--sans);
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--fg); }
-  main { max-width: 980px; margin: 0 auto; padding: 0 16px 16px; display: grid; gap: 12px; }
-  /* Header controls and the stage stay pinned while the panels below scroll. The stage shrinks
-     to keep at least ~30% of the window for the panels. */
-  .pinned { position: sticky; top: 0; z-index: 10; display: grid; gap: 12px; padding: 16px 0 12px; background: var(--bg); box-shadow: 0 8px 12px -10px rgb(0 0 0 / 0.6); }
+  body { margin: 0; background: var(--md-surface); color: var(--md-on-surface); }
+  main { max-width: 980px; margin: 0 auto; padding: 0 16px 24px; display: grid; gap: 16px; }
+  :focus-visible { outline: 3px solid var(--md-secondary); outline-offset: 2px; }
+  /* Header (M3 top app bar) and the stage stay pinned while the panels below scroll. The stage
+     shrinks to keep at least ~30% of the window for the panels. */
+  .pinned { position: sticky; top: 0; z-index: 10; display: grid; gap: 12px; padding: 12px 0; background: var(--md-surface); box-shadow: var(--md-elevation-2); }
   .pinned .stage { width: min(100%, calc((70vh - 90px) * 16 / 9)); justify-self: center; }
-  header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
-  h1 { font-size: 16px; margin: 0; flex: 1 1 320px; overflow-wrap: anywhere; }
-  .chip { border: 2px solid var(--border); padding: 2px 8px; font-size: 13px; background: var(--panel); }
-  .chip.live::before { content: "● "; color: #6bd968; }
-  .chip.offline::before { content: "● "; color: #ff6b6b; }
-  button {
-    font: inherit; font-size: 13px; color: var(--fg); background: var(--panel);
-    border: 2px solid var(--border); padding: 2px 10px; cursor: pointer;
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 48px; }
+  h1 { font-size: 22px; line-height: 28px; font-weight: 400; margin: 0 8px 0 0; flex: 1 1 320px; overflow-wrap: anywhere; }
+  /* M3 assist chip */
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 4px;
+    border: 1px solid var(--md-outline-variant); font-size: 14px; font-weight: 500; letter-spacing: 0.1px; color: var(--md-on-surface-variant);
   }
-  button:hover:not(:disabled), button:focus-visible { border-color: var(--accent); outline: none; }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
-  .stage { position: relative; aspect-ratio: 16 / 9; border: 4px solid var(--border); overflow: hidden; }
+  .chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; }
+  .chip.live::before { background: #7ee787; }
+  .chip.offline::before { background: #ffb4ab; }
+  /* M3 common buttons: filled (Replay), tonal (Pause), outlined (Clear, Speed), text (Copy). */
+  button {
+    position: relative; overflow: hidden; height: 32px; padding: 0 16px; border-radius: 4px; border: 0; cursor: pointer;
+    font: inherit; font-size: 14px; font-weight: 500; letter-spacing: 0.1px;
+    background: transparent; color: var(--md-primary);
+    transition: box-shadow 0.15s;
+  }
+  button::after { content: ""; position: absolute; inset: 0; background: currentColor; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+  button:hover:not(:disabled)::after { opacity: 0.08; }
+  button:focus-visible::after, button:active:not(:disabled)::after { opacity: 0.1; }
+  button.filled { background: var(--md-primary); color: var(--md-on-primary); }
+  button.filled:hover:not(:disabled) { box-shadow: var(--md-elevation-1); }
+  button.tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+  button.outlined { border: 1px solid var(--md-outline); padding: 0 15px; }
+  button.text { height: 28px; padding: 0 10px; }
+  /* Pause ⇄ Play keeps one width so the buttons beside it do not shift. */
+  #pause { width: 76px; padding: 0; }
+  button:disabled { cursor: not-allowed; background: rgb(230 224 233 / 0.12); color: rgb(230 224 233 / 0.38); box-shadow: none; }
+  button.outlined:disabled { background: transparent; border-color: rgb(230 224 233 / 0.12); }
+  button.text:disabled { background: transparent; }
+  .stage { position: relative; aspect-ratio: 16 / 9; border: 4px solid var(--md-outline-variant); overflow: hidden; }
   canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
   .bubble {
     position: absolute; z-index: 2; max-width: 46%; padding: 8px 10px; font-size: 14px; line-height: 1.45;
@@ -42,6 +82,8 @@
   }
   .bubble[hidden] { display: none; }
   .bubble .who { display: block; font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+  /* Handwritten speech; the name/label line above it stays in Pretendard. Gamja Flower runs small, hence 19px. */
+  .bubble #said { font-family: "Gamja Flower", var(--sans); font-size: 19px; line-height: 1.3; }
   .bubble::after {
     content: ""; position: absolute; bottom: -12px; left: var(--tail, 50%); translate: -50% 0;
     border: 6px solid transparent; border-top-color: #1b1b24;
@@ -70,13 +112,19 @@
   }
   .banner[hidden] { display: none; }
   .tag { position: absolute; bottom: 2%; translate: -50% 0; font-size: 13px; font-weight: 700; text-shadow: 2px 2px 0 #000; white-space: pre; text-align: center; line-height: 1.3; }
+  /* Panels are M3 elevated cards; the transcript is one too. */
+  .log, .panel { border-radius: 12px; background: var(--md-surface-container-low); box-shadow: var(--md-elevation-1); }
   .log {
-    border: 2px solid var(--border); background: var(--panel); padding: 8px 12px;
-    max-height: 260px; overflow-y: auto; font-size: 13px; line-height: 1.5;
+    padding: 12px 16px; max-height: 260px; overflow-y: auto; font-size: 14px; line-height: 20px; letter-spacing: 0.25px;
   }
   .log p { margin: 0 0 4px; }
-  .log .meta { color: var(--muted); }
-  .dir { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  .log .meta { color: var(--md-on-surface-variant); }
+  /* Folder path: a link-style button that opens the debate folder in Finder (via the stage server). */
+  .dir {
+    justify-self: start; height: auto; padding: 4px 8px; margin-left: -8px; border-radius: 4px;
+    color: var(--md-on-surface-variant); font-size: 12px; font-weight: 400; letter-spacing: 0.4px; text-align: left; overflow-wrap: anywhere;
+  }
+  .dir:hover { color: var(--md-primary); text-decoration: underline; text-underline-offset: 2px; }
   .badge { display: inline-block; margin-left: 6px; padding: 0 5px; font-size: 11px; font-weight: 700; color: #14151c; vertical-align: 1px; }
   .badge[hidden] { display: none; }
   .badge.keep { background: #9ad1ff; }
@@ -84,45 +132,55 @@
   .bubble.fact-verified { border-color: #2f9e44; }
   .bubble.fact-refuted { border-color: #d62828; }
   .bubble.fact-open { border-color: #868e96; }
+  /* Status and severity labels: small M3-style chips on container colors. */
+  .fact-mark, .sev {
+    display: inline-flex; align-items: center; justify-content: center; height: 20px; margin-right: 8px; padding: 0 8px; border-radius: 6px;
+    font-size: 11px; line-height: 16px; font-weight: 500; letter-spacing: 0.5px; vertical-align: 1px;
+  }
+  .fact-mark { min-width: 76px; }
+  .sev { min-width: 58px; }
+  .fact-mark.verified { background: var(--md-success-container); color: var(--md-on-success-container); }
+  .fact-mark.refuted, .sev.critical { background: var(--md-error-container); color: var(--md-on-error-container); }
+  .fact-mark.open, .sev.note { background: var(--md-surface-container-highest); color: var(--md-on-surface-variant); }
+  .sev.major { background: var(--md-warning-container); color: var(--md-on-warning-container); }
+  .sev.minor { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
   .facts { list-style: none; padding: 0; margin: 0; }
-  .facts li { margin-bottom: 8px; }
-  .facts .quote { display: block; color: var(--muted); font-size: 13px; }
-  .fact-mark { display: inline-block; min-width: 76px; margin-right: 6px; padding: 0 4px; font-size: 11px; font-weight: 700; text-align: center; color: #14151c; }
-  .fact-mark.verified { background: #6bd968; }
-  .fact-mark.refuted { background: #ff6b6b; }
-  .fact-mark.open { background: var(--muted); }
-  .panel { border: 2px solid var(--border); background: var(--panel); padding: 10px 14px; font-size: 14px; line-height: 1.55; }
-  .panel h2 { font-size: 15px; margin: 0 0 8px; color: var(--accent); }
-  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .facts li { margin-bottom: 12px; }
+  .facts .quote { display: block; margin-top: 2px; color: var(--md-on-surface-variant); font-size: 13px; }
+  .panel { padding: 16px 20px; font-size: 14px; line-height: 22px; letter-spacing: 0.25px; }
+  /* Panel titles: M3 title-large in primary, with a short accent bar. */
+  .panel h2 {
+    display: flex; align-items: center; gap: 10px; margin: 0 0 12px;
+    font-size: 20px; line-height: 28px; font-weight: 700; letter-spacing: 0; color: var(--md-primary);
+  }
+  .panel h2::before { content: ""; width: 4px; height: 20px; border-radius: 2px; background: var(--md-primary); }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
   .panel-head h2 { margin: 0; }
   .panel-head button[hidden] { display: none; }
-  .panel h3 { font-size: 14px; margin: 12px 0 6px; }
-  .panel h4, .panel h5, .panel h6 { font-size: 13px; margin: 10px 0 4px; }
-  .panel p { margin: 0 0 6px; }
+  .panel h3 { font-size: 14px; line-height: 20px; font-weight: 600; margin: 16px 0 8px; }
+  .panel h4, .panel h5, .panel h6 { font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  .panel p { margin: 0 0 8px; }
   .panel ul, .panel ol { margin: 0 0 8px; padding-left: 22px; }
-  .panel li { margin-bottom: 3px; }
+  .panel li { margin-bottom: 4px; }
   .panel li > ul, .panel li > ol { margin: 4px 0 2px; }
   .panel li > p { margin: 2px 0; }
-  .panel .table-wrap { overflow-x: auto; margin: 0 0 10px; }
-  .panel table { border-collapse: collapse; font-size: 13px; min-width: 100%; }
-  .panel th, .panel td { border: 1px solid var(--border); padding: 4px 6px; text-align: left; vertical-align: top; }
-  .panel th { background: #2a2d42; }
-  .panel a { color: #8ecbff; }
-  .panel code { background: #2a2d42; padding: 0 4px; }
-  .panel .tldr { border-left: 4px solid var(--accent); padding-left: 8px; font-weight: 700; }
-  .empty { color: var(--muted); }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
-  .card { border: 2px solid var(--border); padding: 8px 10px; background: var(--bg); }
-  .card h4 { margin: 0 0 4px; font-size: 14px; }
-  .card .verdict { color: var(--muted); font-size: 13px; }
-  .card ul { list-style: none; padding: 0; margin: 6px 0 0; }
-  .card li { font-size: 13px; margin-bottom: 6px; }
-  .sev { display: inline-block; min-width: 58px; margin-right: 6px; padding: 0 4px; font-size: 11px; font-weight: 700; text-align: center; color: #14151c; }
-  .sev.critical { background: #ff6b6b; }
-  .sev.major { background: #ffb347; }
-  .sev.minor { background: #9ad1ff; }
-  .sev.note { background: var(--muted); }
-  .counts { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 6px; }
+  .panel .table-wrap { overflow-x: auto; margin: 0 0 12px; border: 1px solid var(--md-outline-variant); border-radius: 8px; }
+  .panel table { border-collapse: collapse; font-size: 13px; min-width: 100%; font-variant-numeric: tabular-nums; }
+  .panel th, .panel td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--md-outline-variant); }
+  .panel tr:last-child td { border-bottom: 0; }
+  .panel th { background: var(--md-surface-container-high); font-weight: 600; }
+  .panel a { color: var(--md-primary); text-underline-offset: 2px; }
+  .panel code { background: var(--md-surface-container-highest); padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, "SF Mono", Menlo, "D2Coding", monospace; font-size: 0.92em; }
+  .panel .tldr { border-left: 4px solid var(--md-primary); padding-left: 12px; font-weight: 600; }
+  .empty { color: var(--md-on-surface-variant); }
+  /* Review cards: M3 outlined cards inside the Reviews card. */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .card { border: 1px solid var(--md-outline-variant); border-radius: 12px; padding: 12px 16px; background: var(--md-surface-container); }
+  .card h4 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+  .card .verdict { color: var(--md-on-surface-variant); font-size: 13px; }
+  .card ul { list-style: none; padding: 0; margin: 8px 0 0; }
+  .card li { font-size: 13px; margin-bottom: 8px; }
+  .counts { color: var(--md-on-surface-variant); font-size: 12px; font-weight: 400; margin-left: 8px; }
 </style>
 </head>
 <body>
@@ -131,10 +189,10 @@
   <header>
     <h1 id="topic">Model Debate</h1>
     <span class="chip offline" id="conn">offline</span>
-    <button type="button" id="pause" aria-pressed="false">Pause</button>
-    <button type="button" id="clear" disabled title="Empty the panels below (enabled once the debate has finished)">Clear</button>
-    <button type="button" id="replay" disabled title="Replay the whole debate from the brief (enabled once the debate has finished)">Replay</button>
-    <button type="button" id="speed" disabled title="Playback speed (enabled while a replay is playing)">Speed 1×</button>
+    <button type="button" class="tonal" id="pause" aria-pressed="false">Pause</button>
+    <button type="button" class="outlined" id="clear" disabled title="Empty the panels below (enabled once the debate has finished)">Clear</button>
+    <button type="button" class="filled" id="replay" disabled title="Replay the whole debate from the brief (enabled once the debate has finished)">Replay</button>
+    <button type="button" class="outlined" id="speed" disabled title="Playback speed (enabled while a replay is playing)">Speed 1×</button>
   </header>
   <div class="stage" id="stage">
     <canvas id="canvas" width="160" height="90" role="img" aria-label="Pixel-art animation of Geppetto, Clark and Rocky debating"></canvas>
@@ -150,7 +208,7 @@
   <section class="panel" aria-labelledby="synthesis-title">
     <div class="panel-head">
       <h2 id="synthesis-title">Synthesis</h2>
-      <button type="button" id="copy-synthesis" hidden title="Copy synthesis.md as Markdown">Copy</button>
+      <button type="button" class="text" id="copy-synthesis" hidden title="Copy synthesis.md as Markdown">Copy</button>
     </div>
     <div id="synthesis"><p class="empty">No synthesis yet.</p></div>
   </section>
@@ -161,11 +219,11 @@
   <section class="panel" aria-labelledby="answer-title">
     <div class="panel-head">
       <h2 id="answer-title">Final Answer</h2>
-      <button type="button" id="copy-answer" hidden title="Copy answer.md as Markdown">Copy</button>
+      <button type="button" class="text" id="copy-answer" hidden title="Copy answer.md as Markdown">Copy</button>
     </div>
     <div id="answer"><p class="empty">The final answer appears after the reviews.</p></div>
   </section>
-  <div class="dir" id="dir"></div>
+  <button type="button" class="dir" id="dir" title="Open this debate folder in Finder"></button>
 </main>
 <script>
 "use strict";
@@ -950,6 +1008,8 @@ async function copyMarkdown(button, text) {
 }
 $("copy-synthesis").addEventListener("click", (e) => copyMarkdown(e.currentTarget, state.synthesis));
 $("copy-answer").addEventListener("click", (e) => copyMarkdown(e.currentTarget, state.answer));
+// The folder path asks the stage server to open the debate folder (Finder on macOS).
+$("dir").addEventListener("click", () => { fetch("/open-folder", { method: "POST" }).catch(() => {}); });
 // The finale bubble works as a link: click (or Enter/Space) scrolls the page to the Final Answer
 // panel, just below the pinned header and stage, and flashes it.
 function setAnswerLink(on) {
