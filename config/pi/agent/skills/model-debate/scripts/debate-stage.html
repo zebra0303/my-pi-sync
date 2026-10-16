@@ -588,7 +588,9 @@ function renderFacts(box, facts) {
   for (const f of facts) {
     const li = el("li");
     li.append(el("span", "fact-mark " + f.status, f.status.toUpperCase()), el("strong", "", f.id + " "), f.claim);
-    const meta = [f.was && f.was !== f.status && "was " + f.was, f.quote && "“" + f.quote + "”", f.scope && "scope: " + f.scope, f.raiser && "raised by " + nameOf(f.raiser)].filter(Boolean);
+    // Some sources mark list items with ◆/■/▶ (e.g. GIGAZINE's "◆1st place"); show them as a plain bullet.
+    const quote = f.quote && f.quote.replace(/^[◆◇■□▶►▪●○]\s*/u, "• ");
+    const meta = [f.was && f.was !== f.status && "was " + f.was, quote && "“" + quote + "”", f.scope && "scope: " + f.scope, f.raiser && "raised by " + nameOf(f.raiser)].filter(Boolean);
     if (meta.length || f.source) {
       const q = el("span", "quote", meta.join(" · ") + (f.source ? (meta.length ? " · " : "") : ""));
       if (f.source) {
