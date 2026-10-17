@@ -538,7 +538,8 @@ function applyState(next) {
     if (played.has(ev.key)) continue;
     played.add(ev.key);
     for (const line of ev.lines) {
-      queue.push({ key: ev.key, speaker: ev.speaker, target: line.target || null, text: line.text, label: ev.label, stance: ev.stance || null, narrator: narratorOf(ev.key) });
+      // The bubble shows at most BUBBLE_CHARS; the transcript keeps the whole line.
+      queue.push({ key: ev.key, speaker: ev.speaker, target: line.target || null, text: clipBubble(line.text), full: line.text, label: ev.label, stance: ev.stance || null, narrator: narratorOf(ev.key) });
     }
   }
   renderPanels();
@@ -741,13 +742,16 @@ function renderReviews(box, reviews) {
 
 function nameOf(id) { return CHARACTERS[id] ? CHARACTERS[id].name : ""; }
 
+const BUBBLE_CHARS = 140;
+const clipBubble = (s) => (s.length > BUBBLE_CHARS ? s.slice(0, BUBBLE_CHARS - 1) + "…" : s);
+
 function log(item) {
   const p = document.createElement("p");
   const meta = document.createElement("span");
   meta.className = "meta";
   const who = item.speaker ? nameOf(item.speaker) + (item.target ? " → " + nameOf(item.target) : "") : item.narrator ? castNames(item) : "Narrator";
   meta.textContent = "[" + item.label + "] " + who + (item.stance ? " (" + STANCE_LABEL[item.stance.kind] + ")" : "") + ": ";
-  p.append(meta, item.text);
+  p.append(meta, item.full || item.text);
   if (item.stance && item.stance.reason) p.append(el("span", "meta", " — " + item.stance.reason));
   const box = $("log");
   const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 24;

@@ -93,7 +93,7 @@ function extractLines(text) {
     const c = clean(line);
     const s = c.match(STANCE);
     if (s) {
-      stance ??= { kind: STANCE_KIND[s[1].toLowerCase()], reason: clip(s[2].trim()) };
+      stance ??= { kind: STANCE_KIND[s[1].toLowerCase()], reason: s[2].trim() };
       return;
     }
     if (c.length >= 4 && !lines.includes(c)) lines.push(c);
@@ -110,7 +110,8 @@ function extractLines(text) {
     const para = raw.map((l) => l.trim()).find((l) => l && !/^(?:#|\||```|---)/.test(l));
     if (para) push(para);
   }
-  return { lines: lines.slice(0, MAX_LINES).map(clip), stance };
+  // Lines go out whole: the page clips them for the bubble and keeps the full text for the transcript.
+  return { lines: lines.slice(0, MAX_LINES), stance };
 }
 
 // The answer's one-line summary: its TL;DR line if it has one, else its first prose paragraph
@@ -118,16 +119,21 @@ function extractLines(text) {
 function answerSummary(text) {
   const raw = text.replace(/^---\n[\s\S]*?\n---\n/, '').split('\n').map((l) => l.trim());
   const line = raw.find((l) => TLDR.test(l)) ?? raw.find((l) => l && !/^(?:#|\||```|---|>)/.test(l) && !BULLET.test(l));
-  return line ? clip(clean(line)) : null;
+  return line ? clean(line) : null;
 }
 
 const NICKNAMES = Object.fromEntries(PANELISTS.map((p) => [p.name.toLowerCase(), p.id]));
 const FACT = /^\s*[-*]\s*(?:\*\*)?\[?(F\d+)\]?(?:\*\*)?\s*\[(verified|refuted|open)\]\s*(.+)$/i;
 
 // facts.md rows: `- F1 [verified|refuted|open] 주장 — 출처: … — "원문" — 범위: … — 제기: 닉네임`.
+// Rows under a `## … Delta …` / `## … 델타 …` heading, and rows rechecked with `이전:`/`was:`, come
+// from the delta fact check after the last round, so they play after it rather than after Round 1.
+const DELTA_HEADING = /^#{1,6}\s.*(?:delta|델타)/i;
 function parseFacts(text) {
   const facts = [];
+  let inDelta = false;
   for (const line of text.split('\n')) {
+    if (/^#{1,6}\s/.test(line)) inDelta = DELTA_HEADING.test(line);
     const m = line.match(FACT);
     if (!m) continue;
     const [, id, status, rest] = m;
@@ -145,7 +151,8 @@ function parseFacts(text) {
     const raiser = either('제기', 'raised by').split(/[^\p{L}]+/u).map((n) => NICKNAMES[n.toLowerCase()]).find(Boolean) ?? null;
     // `이전: open` (or `was: open`) records the status before a recheck, so the change can be shown.
     const was = either('이전', 'was').toLowerCase().match(/verified|refuted|open/)?.[0] ?? null;
-    facts.push({ id: id.toUpperCase(), status: status.toLowerCase(), was, claim: clean(parts[0]), source: either('출처', 'source'), quote, scope: either('범위', 'scope'), raiser });
+    const delta = inDelta || Boolean(was && was !== status.toLowerCase());
+    facts.push({ id: id.toUpperCase(), status: status.toLowerCase(), was, delta, claim: clean(parts[0]), source: either('출처', 'source'), quote, scope: either('범위', 'scope'), raiser });
   }
   return facts;
 }
@@ -191,7 +198,8 @@ function mentionedPanelist(text, selfId) {
 }
 
 const phaseLabel = (kind, n) => (kind === 'r' ? `Round ${n}` : `Review ${n}`);
-// Workflow order: brief → r1..r3 → synthesis → review1..2.
+// Play order: brief (0) → Round 1 (1) → fact check (1.5) → Round 2–3 (2–3) → delta facts (9)
+// → synthesis (10) → reviews (11–12) → final answer (30).
 const phaseOrder = (kind, n) => (kind === 'r' ? n : 10 + n);
 
 const SEVERITY = /^\[(critical|major|minor)\]\s*/i;
@@ -240,6 +248,10 @@ function snapshot() {
   const advance = (order, kind, n) => {
     if (order > phase.order) phase = { order, kind, n };
   };
+  // Order of the earliest panelist file that exists but is not released yet (still running in
+  // status.json, or not settled). Later events (fact checks, the next round, the synthesis) wait
+  // behind it so the stage never plays them first.
+  let heldFrom = Infinity;
   for (const { f, mtime } of files) {
     if (f === 'brief.md') {
       const text = read(f);
@@ -266,13 +278,14 @@ function snapshot() {
       for (const fact of facts) {
         events.push({
           key: `${f}#${fact.id}:${fact.status}:${fact.claim}`,
-          order: 1.5,
+          // Round 1 fact check right after Round 1; delta rows after the last round, before the synthesis.
+          order: fact.delta ? 9 : 1.5,
           mtime,
           speaker: null,
           label: 'Fact check',
           lines: [
             {
-              text: clip(`${FACT_MARK[fact.status]} ${fact.id}${fact.was && fact.was !== fact.status ? ` · ${fact.was} → ${fact.status}` : ''} · ${fact.claim}`),
+              text: `${FACT_MARK[fact.status]} ${fact.id}${fact.was && fact.was !== fact.status ? ` · ${fact.was} → ${fact.status}` : ''} · ${fact.claim}`,
               target: fact.status === 'refuted' ? fact.raiser : null,
             },
           ],
@@ -291,7 +304,10 @@ function snapshot() {
     const live = status && status.kind === kind && status.n === n;
     const panel = live && status.panels[agent];
     const ready = panel ? panel.state === 'completed' : now - mtime >= SETTLE_MS;
-    if (!ready) continue;
+    if (!ready) {
+      heldFrom = Math.min(heldFrom, order);
+      continue;
+    }
     const text = read(f);
     if (!isFinal(text)) continue;
     const critique = !(kind === 'r' && n === 1);
@@ -334,7 +350,9 @@ function snapshot() {
     thinking,
     status: panelStatus,
     panelists: PANELISTS.map(({ id, name }) => ({ id, name, model: models[id] })),
-    events: events.map(({ key, speaker, label, lines, stance }) => ({ key, speaker, label, lines, stance: stance ?? null })),
+    events: events
+      .filter((e) => e.order <= heldFrom)
+      .map(({ key, speaker, label, lines, stance }) => ({ key, speaker, label, lines, stance: stance ?? null })),
     synthesis,
     answer,
     facts,
