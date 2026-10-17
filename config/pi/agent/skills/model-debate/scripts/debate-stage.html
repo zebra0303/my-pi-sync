@@ -176,6 +176,11 @@
   .panel a { color: var(--md-primary); text-underline-offset: 2px; }
   .panel code { background: var(--md-surface-container-highest); padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, "SF Mono", Menlo, "D2Coding", monospace; font-size: 0.92em; }
   .panel .tldr { border-left: 4px solid var(--md-primary); padding-left: 12px; font-weight: 600; }
+  #answer .markdown-image { display: block; margin: 8px 0 12px; }
+  #answer .markdown-image img {
+    display: block; max-width: 100%; max-height: min(65vh, 560px);
+    width: auto; height: auto; object-fit: contain; border-radius: 8px;
+  }
   .empty { color: var(--md-on-surface-variant); }
   /* Review cards: M3 outlined cards inside the Reviews card. */
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
@@ -561,7 +566,7 @@ function renderPanels() {
   else $("reviews").replaceChildren(el("p", "empty", "No reviews yet."));
   // The final answer is the ending: it shows when Grogu delivers it, after the reviews.
   const answerShown = Boolean(state.answer && revealed.has("answer.md"));
-  if (answerShown) renderMarkdown($("answer"), state.answer);
+  if (answerShown) renderMarkdown($("answer"), state.answer, true);
   else $("answer").replaceChildren(el("p", "empty", "The final answer appears after the reviews."));
   $("copy-answer").hidden = !answerShown;
 }
@@ -636,17 +641,43 @@ function el(tag, className, text) {
   return node;
 }
 
-// Bold, inline code and http(s) links only; everything else stays plain text.
-function inline(parent, text) {
-  const re = /\*\*([^*]+)\*\*|`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
+// Images are opt-in for the Final Answer; other panels keep image syntax as text.
+function markdownImage(alt, href) {
+  let url;
+  try { url = new URL(href); } catch { return null; }
+  if (url.protocol !== "https:" || url.username || url.password) return null;
+  const wrap = el("span", "markdown-image");
+  const img = el("img");
+  img.alt = alt;
+  img.loading = "lazy";
+  img.decoding = "async";
+  img.referrerPolicy = "no-referrer";
+  img.addEventListener("error", () => {
+    const fallback = el("span", "", "Image unavailable" + (alt ? ": " + alt : "") + ". ");
+    const link = el("a", "", "Open original image");
+    link.href = url.href;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    fallback.append(link);
+    img.replaceWith(fallback);
+  }, { once: true });
+  img.src = url.href;
+  wrap.append(img);
+  return wrap;
+}
+
+// Bold, inline code, http(s) links, and optional HTTPS images; no raw HTML.
+function inline(parent, text, images = false) {
+  const re = /!\[([^\]]*)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
   let last = 0, m;
   while ((m = re.exec(text))) {
     parent.append(text.slice(last, m.index));
-    if (m[1] !== undefined) parent.append(el("strong", "", m[1]));
-    else if (m[2] !== undefined) parent.append(el("code", "", m[2]));
+    if (m[1] !== undefined) parent.append((images && markdownImage(m[1], m[2])) || m[0]);
+    else if (m[3] !== undefined) parent.append(el("strong", "", m[3]));
+    else if (m[4] !== undefined) parent.append(el("code", "", m[4]));
     else {
-      const a = el("a", "", m[3]);
-      a.href = m[4];
+      const a = el("a", "", m[5]);
+      a.href = m[6];
       a.target = "_blank";
       a.rel = "noopener";
       parent.append(a);
@@ -663,7 +694,7 @@ function tableCells(line) {
 
 // Headings, paragraphs, TL;DR, tables and nested bullet/numbered lists. Indentation decides
 // nesting, and numbered lists keep their written numbers (start/value) across nested bullets.
-function renderMarkdown(box, md) {
+function renderMarkdown(box, md, images = false) {
   box.replaceChildren();
   const lines = md.replace(/^---\n[\s\S]*?\n---\n/, "").split("\n");
   let stack = []; // [{ indent, list, li }]
@@ -673,12 +704,12 @@ function renderMarkdown(box, md) {
       stack = [];
       const table = el("table");
       const head = el("tr");
-      for (const c of tableCells(line)) { const th = el("th"); inline(th, c); head.append(th); }
+      for (const c of tableCells(line)) { const th = el("th"); inline(th, c, images); head.append(th); }
       table.append(head);
       i += 2;
       for (; i < lines.length && /^\s*\|/.test(lines[i]); i++) {
         const tr = el("tr");
-        for (const c of tableCells(lines[i])) { const td = el("td"); inline(td, c); tr.append(td); }
+        for (const c of tableCells(lines[i])) { const td = el("td"); inline(td, c, images); tr.append(td); }
         table.append(tr);
       }
       i--;
@@ -695,7 +726,7 @@ function renderMarkdown(box, md) {
       let top = stack[stack.length - 1];
       if (top && top.indent === indent && top.list.tagName !== tag) { stack.pop(); top = stack[stack.length - 1]; }
       const li = el("li");
-      inline(li, item[4]);
+      inline(li, item[4], images);
       if (top && top.indent === indent) {
         if (item[3]) li.value = Number(item[3]);
         top.list.append(li);
@@ -713,7 +744,7 @@ function renderMarkdown(box, md) {
     // An indented line under a list item continues that item.
     if (stack.length && /^\s+\S/.test(line)) {
       const p = el("p");
-      inline(p, line.trim());
+      inline(p, line.trim(), images);
       stack[stack.length - 1].li.append(p);
       continue;
     }
@@ -721,7 +752,7 @@ function renderMarkdown(box, md) {
     const heading = line.match(/^(#{1,6})\s+(.*)/);
     const tldr = /^TL;DR\s*[:：]/i.test(line);
     const node = el(heading ? "h" + Math.min(6, heading[1].length + 2) : "p", tldr ? "tldr" : "");
-    inline(node, heading ? heading[2] : line);
+    inline(node, heading ? heading[2] : line, images);
     box.append(node);
   }
 }
