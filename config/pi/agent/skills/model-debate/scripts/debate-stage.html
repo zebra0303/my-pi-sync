@@ -132,6 +132,10 @@
   .bubble.fact-verified { border-color: #2f9e44; }
   .bubble.fact-refuted { border-color: #d62828; }
   .bubble.fact-open { border-color: #868e96; }
+  /* Review lines only. Amber/gold/blue, not the refuted-fact red; the [severity] token stays in the text. */
+  .bubble.sev-critical { border-color: #b45309; }
+  .bubble.sev-major { border-color: #ca8a04; }
+  .bubble.sev-minor { border-color: #3b6ea5; }
   /* Status and severity labels: small M3-style chips on container colors. */
   .fact-mark, .sev {
     display: inline-flex; align-items: center; justify-content: center; height: 20px; margin-right: 8px; padding: 0 8px; border-radius: 6px;
@@ -564,6 +568,18 @@ function renderPanels() {
 
 const STANCE_LABEL = { keep: "Holds", revise: "Revises", withdraw: "Withdraws" };
 
+// Revises/Withdraws only. Ids already written in the reason, in order, with no invented F#.
+function stanceBadgeText(stance) {
+  const label = STANCE_LABEL[stance.kind] || "";
+  if (stance.kind !== "revise" && stance.kind !== "withdraw") return label;
+  const ids = [];
+  for (const m of (stance.reason || "").matchAll(/\bF(\d+)\b/gi)) {
+    const id = "F" + m[1];
+    if (!ids.includes(id)) ids.push(id);
+  }
+  return ids.length ? label + " · " + ids.join(" · ") : label;
+}
+
 // "Rocky (Grok 4.7 Fast, medium) · 1:23" while running; retries and failures from status.json.
 function updateTags() {
   const now = Date.now();
@@ -820,7 +836,8 @@ function renderBubble() {
     bubble.style.setProperty("--tail", (anchor - left) + "px");
     return;
   }
-  bubble.className = "bubble";
+  const reviewSev = /^Review\b/.test(item.label || "") && (item.text || "").match(/^\[(critical|major|minor)\]/i);
+  bubble.className = "bubble" + (reviewSev ? " sev-" + reviewSev[1].toLowerCase() : "");
   setAnswerLink(false);
   bubble.style.top = "auto";
   if (!item.speaker) {
@@ -834,7 +851,7 @@ function renderBubble() {
   badge.hidden = !item.stance;
   if (item.stance) {
     badge.className = "badge " + item.stance.kind;
-    badge.textContent = STANCE_LABEL[item.stance.kind];
+    badge.textContent = stanceBadgeText(item.stance);
     badge.title = item.stance.reason || "";
   }
   banner.hidden = true;
