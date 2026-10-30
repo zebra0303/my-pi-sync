@@ -9,7 +9,7 @@ metadata:
 
 Run a structured debate between three panelist agents, then turn the outcome into the requested deliverable. You (the main session) are the orchestrator: you frame the brief, run rounds, judge disagreements, own the final artifact, and are the only one who publishes.
 
-Panelists: `debate-opus` (Anthropic Claude Opus), `debate-grok` (Cursor Grok Fast tier, chosen for speed), `debate-gpt` (OpenAI Codex GPT Sol tier). Their exact models are pinned in `~/.omp/agent/agents/debate-*.md` (`model:` line, `thinking-level: medium`); change models there, not here. Dispatch all three in one `task` batch per round (`agent: "debate-opus"` etc.) so they run in parallel and stay independent within a round.
+Panelists: `debate-opus` (Anthropic Claude Opus), `debate-grok` (Cursor Grok Fast tier, chosen for speed), `debate-gpt` (OpenAI Codex GPT Sol tier). Their exact models and thinking levels are pinned in `~/.omp/agent/agents/debate-*.md` (`model:` and `thinking-level:` lines); change those settings there, not here. Dispatch all three in one `task` batch per round (`agent: "debate-opus"` etc.) so they run in parallel and stay independent within a round.
 
 Nicknames are display names only; agent IDs and file names keep `debate-*`. Use the nickname everywhere a human reads it (prompts, critiques, synthesis, decision log, report, live stage):
 
