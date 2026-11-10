@@ -530,7 +530,18 @@ function connect() {
   const source = new EventSource("/events");
   source.onopen = () => { $("conn").className = "chip live"; $("conn").textContent = "live"; };
   source.onerror = () => { $("conn").className = "chip offline"; $("conn").textContent = "reconnecting"; };
-  source.addEventListener("state", (e) => applyState(JSON.parse(e.data)));
+  let first = true;
+  source.addEventListener("state", (e) => {
+    const next = JSON.parse(e.data);
+    // A finished folder (synthesis written, nobody working) opened with `?speed=` plays its first
+    // run as a replay at that speed; a live debate keeps 1×.
+    if (first && REPLAY_SPEED > 1 && next.synthesis && !(next.thinking || []).length) {
+      replaying = true;
+      setSpeed(REPLAY_SPEED);
+    }
+    first = false;
+    applyState(next);
+  });
 }
 
 function applyState(next) {
