@@ -1048,6 +1048,7 @@ $("replay").addEventListener("click", () => {
   revealed.clear();
   renderPanels();
   if (paused) $("pause").click();
+  setSpeed(REPLAY_SPEED);
   applyState(state);
 });
 // Copy buttons copy the source Markdown exactly as written, not the rendered text.
@@ -1093,6 +1094,8 @@ bubble.addEventListener("keydown", (e) => {
   if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showAnswerPanel(); }
 });
 const SPEEDS = [1, 2, 4];
+// `?speed=2` or `?speed=4` in the page URL makes Replay start at that speed; anything else means 1×.
+const REPLAY_SPEED = SPEEDS.find((s) => String(s) === new URLSearchParams(location.search).get("speed")) || 1;
 function setSpeed(next) {
   const now = performance.now();
   const shownAt = current ? current.shown : 0;

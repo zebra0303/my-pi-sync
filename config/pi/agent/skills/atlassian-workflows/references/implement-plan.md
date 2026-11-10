@@ -148,7 +148,7 @@ After writing the plan:
 
 ## Required plan structure
 
-Use Korean unless the user requests another language. Keep Jira/subtask summaries in English when appropriate.
+Use Korean unless the user requests another language. Jira/subtask summaries referenced in the plan are also written in Korean, following the `SKILL.md` Jira language rule.
 
 ```markdown
 ---

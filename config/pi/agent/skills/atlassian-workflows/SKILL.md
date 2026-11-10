@@ -23,7 +23,7 @@ Use this skill for Atlassian tasks that were previously handled by Claude comman
 
 ## General Rules
 
-- Keep conversation with the user in the user's language, but write Jira ticket content in English unless the workflow explicitly asks for both English and Korean output.
+- Keep conversation with the user in the user's language. **Write Jira ticket content in Korean**: summary, description, Background and other custom fields, comments, and created Sub-task/Subtask content. Markdown section headings stay in English (`## Description`, `## Implementation Plan`, ...). Keep code identifiers, file paths, commands, API/endpoint names, env vars, and product names verbatim. Use English body text only when the user explicitly asks for it, or when a workflow explicitly requires a bilingual artifact (e.g. the spike report's `.md`/`.ko.md` local files).
 - **Pull request titles are always English, with no exception.** This applies even when the PR body, the Jira ticket, or the conversation is in Korean. When the user asks for a Korean PR, that means the PR **body** is Korean; the title still follows `<type>(<scope>): <subject> [TICKET]` in English. See `~/.pi/agent/docs/conventions/git.md` for the full PR convention.
 - Prefer `acli` for Jira reads/standard edits and `confluence` for Confluence reads/searches/creates.
 - If `acli`, `confluence`, or Atlassian API calls fail because credentials are missing, tell the user which environment variables or login steps are needed instead of inventing data.

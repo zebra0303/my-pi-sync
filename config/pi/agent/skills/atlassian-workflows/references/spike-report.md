@@ -335,16 +335,18 @@ repositories: '<REPO_PATH_1>, <REPO_PATH_2>, ...'
 
 ### Step 4: Create Jira Subtask (Optional)
 
-Ask the user if they want to create a Jira subtask for the spike report:
+Ask the user if they want to create a Jira subtask for the spike report. Jira content is written in Korean, so upload the Korean report (`-spike.ko.md`), converted to ADF:
 
 ```bash
+python3 ~/.pi/agent/skills/atlassian-workflows/scripts/md-to-adf.py Docs/.dev/<TICKET_NUMBER>-spike.ko.md > /tmp/<TICKET_NUMBER>-spike-adf.json
+
 # Create subtask under the story
 acli jira workitem create \
   --project <PROJECT_KEY> \
   --type Subtask \
   --parent <STORY_TICKET> \
   --summary "[Spike Report] <STORY_SUMMARY>" \
-  --description @Docs/.dev/<TICKET_NUMBER>-spike.md
+  --description-file /tmp/<TICKET_NUMBER>-spike-adf.json
 ```
 
 ### Step 5: Publish to Confluence (Optional)

@@ -402,7 +402,8 @@ const server = createServer((req, res) => {
     openWithOs(debateDir, () => console.error(`Could not open ${debateDir}.`));
     return res.writeHead(204).end();
   }
-  if (req.url === '/' || req.url === '/index.html') {
+  const path = req.url.split('?')[0];
+  if (path === '/' || path === '/index.html') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(page);
     return;

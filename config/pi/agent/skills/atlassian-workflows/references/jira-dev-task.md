@@ -141,8 +141,8 @@ Only create Sub-task(Dev) work items after showing the proposal and receiving us
 
 Summary naming:
 
-- Split Sub-task(Dev): `[Story summary] — [Layer or Scope]`
-- Single Sub-task(Dev): use the Story summary as-is, optionally suffix `— Implementation` if Jira requires unique summaries
+- Split Sub-task(Dev): `[Story summary] — [계층 또는 범위]` (write the scope suffix in Korean, e.g. `— 백엔드: 결과 API 관리자 인증`)
+- Single Sub-task(Dev): use the Story summary as-is, optionally suffix `— 구현` if Jira requires unique summaries
 
 Creation command template:
 
@@ -155,12 +155,12 @@ acli jira workitem create \
   --description @/tmp/<STORY_KEY>-<scope>-description.json
 ```
 
-If the Jira instance uses a different exact work type name, first list or verify project issue types and use the project-specific name that maps to development subtasks. Treat legacy `DevTask` as equivalent only when that is the configured work type.
+If the Jira instance uses a different exact work type name, first list or verify project issue types and use the project-specific name that maps to development subtasks. Treat legacy `DevTask` as equivalent only when that is the configured work type. Some projects (for example `XE`) only have `Sub-task`; verify with `GET /rest/api/3/issue/createmeta/<PROJECT>/issuetypes` and use `Sub-task` there.
 
 Description requirements:
 
 - Include only the requirements assigned to that Sub-task(Dev) scope.
-- Every created Sub-task(Dev) must include the required Jira Description sections:
+- Every created Sub-task(Dev) must include the required Jira Description sections. Section headings stay in English; the body text under them is Korean:
   - `## Description`
   - `## Implementation Plan`
   - `## Development Deliverables`
@@ -169,29 +169,29 @@ Description requirements:
 
 ```markdown
 ## Description
-This Sub-task(Dev) covers the **MVC / Server-rendered pages** layer of Story LHVE-53.
-Related Sub-task(Dev)s: LHVE-XX (React Components), LHVE-YY (Email Templates)
+이 Sub-task(Dev)는 Story LHVE-53의 **MVC / 서버 렌더링 페이지** 계층을 담당한다.
+관련 Sub-task(Dev): LHVE-XX (React 컴포넌트), LHVE-YY (이메일 템플릿)
 
 ### Scope — Requirement Items
-(list only requirements assigned to this layer)
+(이 계층에 배정된 요구사항만 나열)
 
 ### Files / Areas to Modify
-- `<path>` — required change
+- `<path>` — 필요한 변경
 
 ### Acceptance Criteria
-- <criteria>
+- <조건>
 
 ## Implementation Plan
-1. <step>
-2. <step>
+1. <단계>
+2. <단계>
 
 ## Development Deliverables
-- Code changes: <files/modules>
-- Tests: <test files or test types>
-- Documentation/config/migration/assets: <if applicable>
+- 코드 변경: <파일/모듈>
+- 테스트: <테스트 파일 또는 테스트 종류>
+- 문서/설정/마이그레이션/에셋: <해당 시>
 
 ## Developer Testing
-- [ ] <command or manual scenario>
+- [ ] <명령 또는 수동 시나리오>
 ```
 
 Background requirements:
@@ -199,18 +199,23 @@ Background requirements:
 - Split Sub-task(Dev)s from the same Story share the same Background.
 - The Description Scope section must identify each Sub-task(Dev)'s layer and related Sub-task(Dev)s.
 
-Links:
+Links (`acli jira workitem link create`):
+
+> [!WARNING]
+> `--out`/`--in` are reversed relative to the Jira link sentence: `--out X --in Y --type Blocks` produces **"Y blocks X"**. To record "A blocks B", pass `--out B --in A`. After creating links, verify the direction with `GET /rest/api/3/issue/<KEY>?fields=issuelinks` (`type.outward` + `outwardIssue` / `type.inward` + `inwardIssue`). To fix a wrong link, run `acli jira workitem link delete --id <LINK_ID> --yes` and then recreate it.
 
 ```bash
 # Story link, only if the created work item is not already a direct child via --parent
-acli jira workitem link --from "<STORY_KEY>" --to "<DEV_SUBTASK_KEY>" --type "is developed by"
+acli jira workitem link create --out "<DEV_SUBTASK_KEY>" --in "<STORY_KEY>" --type "<project link type>" --yes
 
-# Related split Sub-task(Dev)s
-acli jira workitem link --from "<DEV_SUBTASK_A>" --to "<DEV_SUBTASK_B>" --type "Relates"
+# Related split Sub-task(Dev)s (direction does not matter)
+acli jira workitem link create --out "<DEV_SUBTASK_A>" --in "<DEV_SUBTASK_B>" --type "Relates" --yes
 
-# Conflict link
-acli jira workitem link --from "<DEV_SUBTASK_A>" --to "<OTHER_DEV_WORK_ITEM>" --type "Relates"
+# Ordering: A blocks B
+acli jira workitem link create --out "<DEV_SUBTASK_B>" --in "<DEV_SUBTASK_A>" --type "Blocks" --yes
 ```
+
+List the available link types with `acli jira workitem link type`.
 
 ### Step 0-5: Assign Shared items
 
@@ -294,7 +299,7 @@ Field responsibilities:
 Rules:
 
 - Every Sub-task(Dev) Description must include these top-level sections: `## Description`, `## Implementation Plan`, `## Development Deliverables`, and `## Developer Testing`.
-- Store Background only in the Background custom field (`customfield_16221`). Do not include a `## Background` section in the Jira Description body unless the project does not support the Background field.
+- Store Background only in the Background custom field (`customfield_16221`). Do not include a `## Background` section in the Jira Description body unless the project does not support the Background field. In that case, put `## Background` first in the Description (for example, the `XE` project's `Sub-task` has no Background field).
 - Preserve existing Background when possible; update or append only relevant new information.
 - If Background is empty, create it from Story context.
 - Keep each Sub-task(Dev)'s Description scoped to only the requirements assigned to that Sub-task(Dev). For split work, reference sibling Sub-task(Dev)s in `## Description` or `## Implementation Plan`.
@@ -303,33 +308,33 @@ Standard Sub-task(Dev) Description structure:
 
 ```markdown
 ## Description
-1-2 sentence work summary.
+1–2문장 작업 요약.
 
 ### Scope — Requirement Items
-Requirement table or bullet list containing only this Sub-task(Dev)'s assigned Story requirements.
+이 Sub-task(Dev)에 배정된 Story 요구사항만 담은 표 또는 목록.
 
 ### Files / Areas to Modify
-File, line, API, configuration, or module references and required changes.
+파일, 라인, API, 설정, 모듈 참조와 필요한 변경.
 
 ### Acceptance Criteria
-Acceptance criteria relevant to this Sub-task(Dev).
+이 Sub-task(Dev)에 해당하는 인수 조건.
 
 ## Implementation Plan
-1. Phase/step description.
-2. Phase/step description.
-3. Validation and handoff step.
+1. 단계 설명.
+2. 단계 설명.
+3. 검증 및 인계 단계.
 
-Include dependency/order notes and related Sub-task(Dev)s when the Story is split.
+Story가 분할된 경우 의존성·순서와 관련 Sub-task(Dev)를 명시한다.
 
 ## Development Deliverables
-- Code changes: `<files/modules>`
-- Tests: `<test files or test types>`
-- Documentation/config/migration/assets: `<if applicable>`
+- 코드 변경: `<파일/모듈>`
+- 테스트: `<테스트 파일 또는 테스트 종류>`
+- 문서/설정/마이그레이션/에셋: `<해당 시>`
 
 ## Developer Testing
-- [ ] Run `<command>` and confirm `<expected result>`.
-- [ ] Verify `<manual scenario>`.
-- [ ] Confirm no regression in `<related area>`.
+- [ ] `<명령>` 실행 후 `<기대 결과>` 확인.
+- [ ] `<수동 시나리오>` 확인.
+- [ ] `<관련 영역>` 회귀 없음 확인.
 ```
 
 Preview format:
@@ -424,16 +429,16 @@ Implementation Subtask format:
 
 ```markdown
 ## Scope
-1-2 sentence task scope.
+1–2문장 작업 범위.
 
 ## Files to modify
-- path (Line N) - change description
+- path (Line N) - 변경 내용
 
-## Estimate: N days
-Rationale for estimate.
+## Estimate: N일
+산정 근거.
 
 ## Testing
-- concrete test items
+- 구체적인 테스트 항목
 ```
 
 Convert implementation Subtask descriptions to ADF before upload.
@@ -507,8 +512,9 @@ Options: apply as proposed / adjust / skip
 After confirmation:
 
 ```bash
-acli jira workitem link --from "<DEVTASK_A>" --to "<DEVTASK_B>" --type "Blocks"
-acli jira workitem link --from "<DEVTASK_A>" --to "<DEVTASK_B>" --type "Relates"
+# A blocks B  (note the reversed --out/--in; see the Links warning in Step 0-4)
+acli jira workitem link create --out "<DEVTASK_B>" --in "<DEVTASK_A>" --type "Blocks" --yes
+acli jira workitem link create --out "<DEVTASK_A>" --in "<DEVTASK_B>" --type "Relates" --yes
 ```
 
 ### Step 16: Re-split Sub-task(Dev), optional
@@ -528,4 +534,4 @@ When re-splitting with existing implementation Subtasks:
 - **Use links to control conflicts**: use blocker or related links when Sub-task(Dev)/DevTask work items touch the same files.
 - **Do not move requirements between Stories**: handle conflicts at the development work item level.
 - **ADF is required**: convert Background and Description Markdown to ADF before uploading.
-- **Write Jira content in English**: write Background, Description, Implementation Plan, Development Deliverables, Developer Testing, and implementation Subtask content in English. Match the user's language in conversation when possible.
+- **Write Jira content in Korean**: write the summary, Background, Description, Implementation Plan, Development Deliverables, Developer Testing, and implementation Subtask content in Korean. Section headings (`## Description`, `### Acceptance Criteria`, ...) stay in English. Keep code identifiers, file paths, commands, API/endpoint names, env vars, and product names verbatim. Use English body text only when the user explicitly asks for it for that ticket.
