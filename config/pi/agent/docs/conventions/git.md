@@ -113,7 +113,7 @@ Reviewers should prefix comments with a priority level:
 
 ## Check List
 
-- [ ] Items the reviewer should pay special attention to.
+- [ ] Write 2–4 concrete, PR-specific points for the **reviewer** to check while reviewing (keep unchecked `- [ ]`; do not use author self-check boilerplate).
 
 ## Test Steps
 
@@ -121,7 +121,8 @@ Reviewers should prefix comments with a priority level:
 
 ## Screenshots
 
-- Attach screenshots of the implemented/modified feature if applicable.
+- For UI changes, **always include both Before and After screenshots** side-by-side in a comparison table (`| Before | After |`), with a red outline (`#FF2D2D`) highlighting the removed or modified element.
+- Always embed real rendered image URLs (`![alt](https://github.com/<owner>/<repo>/blob/<commit>/<file>.png?raw=true)` uploaded via `git hash-object -w` / `git commit-tree` to avoid polluting the PR diff), never local file paths.
 
 ## For Reviewer
 

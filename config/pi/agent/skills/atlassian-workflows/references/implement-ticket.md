@@ -200,7 +200,10 @@ If the user explicitly asks to continue through a gate, record that in the progr
 
 Optionally:
 
-- Create/update PR.
+- Create/update PR:
+  - If the ticket involves UI changes or screenshots are requested, **always capture and embed both Before and After screenshots** in a side-by-side Markdown comparison table (`| Before | After |`), highlighting the removed/changed target element with a red outline (`outline: '3px solid #FF2D2D'`).
+  - Never write plain local file paths (e.g. `.dev/foo.png`) in the PR body. Upload screenshot PNGs to the remote Git object store via an unreferenced commit (`git hash-object -w` → `git mktree` → `git commit-tree` → `git push origin <commit>:refs/heads/pr-assets/<TICKET>` → delete temporary branch ref) and embed `https://github.com/<owner>/<repo>/blob/<commit>/<filename>.png?raw=true` so the images render inline on GitHub without adding binary files to the PR diff.
+  - In the PR's `## Checklist` / `## Check List` section, **always write 2–4 concrete, unchecked (`- [ ]`) review focus items for the reviewer** (what to verify in the code/architecture/edge cases), rather than leaving author self-check boilerplate checked (`- [x]`).
 - Update Jira.
 - Publish notes to Confluence.
 - Record final status and remaining follow-ups.
