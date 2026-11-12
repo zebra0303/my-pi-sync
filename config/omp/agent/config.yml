@@ -7,6 +7,7 @@ modelRoles:
   smol: cursor/grok-4.7:medium
   plan: openai-codex/gpt-6.1-sol:medium
   slow: openai/gpt-6.1-sol:medium
+  default: openai-codex/gpt-6.1-sol:medium
 statusLine:
   separator: powerline
   preset: default
