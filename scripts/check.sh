@@ -62,3 +62,6 @@ done
 # Plugins are not restored by copying their registries, so verify them through
 # the omp CLI instead of checking for files under ~/.omp.
 "$ROOT_DIR/scripts/omp-plugins.sh" status "$OMP_SRC"
+
+# Verify Antigravity (agy) skill symlinks.
+"$ROOT_DIR/scripts/link-agy-skills.sh" status

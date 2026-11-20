@@ -34,6 +34,7 @@ This personal bootstrap repository restores pi and omp (oh-my-pi) configuration 
 - Per-agent backup scripts: [`scripts/backup-pi.sh`](scripts/backup-pi.sh), [`scripts/backup-omp.sh`](scripts/backup-omp.sh)
 - omp backup allowlist shared by all scripts: [`scripts/omp-manifest.sh`](scripts/omp-manifest.sh)
 - omp plugin/marketplace replay: [`scripts/omp-plugins.sh`](scripts/omp-plugins.sh)
+- Antigravity (`agy`) skill symlinking: [`scripts/link-agy-skills.sh`](scripts/link-agy-skills.sh)
 - Environment check script: [`scripts/check.sh`](scripts/check.sh)
 - Script tests: [`tests/`](tests/) — run with `pnpm test`
 
@@ -188,7 +189,8 @@ cd ~/Git/my-pi-sync
 The install script loads or installs `nvm`, installs the Node/npm/pi/pnpm versions in `versions.env`,
 sets the default nvm Node version, and copies pi configuration. For pnpm it uses Corepack when available,
 otherwise a global npm install. It installs `omp` with `brew install can1357/tap/omp` only when the `omp`
-command is missing, copies allowlisted omp configuration, and replays any recorded marketplaces/plugins.
+command is missing, copies allowlisted omp configuration, replays any recorded marketplaces/plugins, and
+symlinks pi/omp/shared skills into `~/.gemini/config/skills` via [`scripts/link-agy-skills.sh`](scripts/link-agy-skills.sh).
 
 `Brewfile` documents the Homebrew dependencies; `install.sh` does not run `brew bundle`.
 `OMP_VERSION` is a diagnostic baseline, **not an enforced Homebrew version pin**: an existing omp is
@@ -265,9 +267,27 @@ Source and destination roots are overridable, which is how the tests drive the s
 | `PI_BACKUP_DIR` | `config/pi/agent` in this checkout | pi backup destination |
 | `OMP_CONFIG_ROOT` | `~/.omp` | omp backup source and install/check destination |
 | `OMP_BACKUP_DIR` | `config/omp` in this checkout | omp backup destination and plugin replay input |
+| `AGENTS_SKILLS_DIR` | `~/.agents/skills` | shared skill source for `link-agy-skills.sh` |
+| `AGY_SKILLS_DIR` | `~/.gemini/config/skills` | Antigravity (`agy`) global skills destination for `link-agy-skills.sh` |
 
 `omp-plugins.sh` also accepts an explicit backup root after `plan`, `restore`, or `status`.
 These variables do not redirect pi installation or pi environment checks, which use `~/.pi/agent`.
+
+## Antigravity (`agy`) skill symlinks
+
+Antigravity discovers global skills one level deep under `~/.gemini/config/skills/<name>/SKILL.md`.
+[`scripts/link-agy-skills.sh`](scripts/link-agy-skills.sh) symlinks skills from omp, pi (flattening `nx/*`),
+and `~/.agents/skills` into `~/.gemini/config/skills` without overwriting real directories or unrelated symlinks
+(`.system/` and `synced/` containers are skipped):
+
+```bash
+./scripts/link-agy-skills.sh            # create/update symlinks
+./scripts/link-agy-skills.sh --dry-run  # preview changes
+./scripts/link-agy-skills.sh --prune    # also remove broken/stale managed symlinks
+./scripts/link-agy-skills.sh status     # OK/MISSING/MISMATCH report
+```
+
+`scripts/install.sh` runs it automatically with `--prune` after restoring pi and omp, and `scripts/check.sh` includes its `status` report.
 
 ## Environment check
 

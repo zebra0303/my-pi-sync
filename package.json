@@ -30,6 +30,7 @@
   "scripts": {
     "backup": "./scripts/backup.sh",
     "check": "./scripts/check.sh",
+    "link-agy-skills": "./scripts/link-agy-skills.sh",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",

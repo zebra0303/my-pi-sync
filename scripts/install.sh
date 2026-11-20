@@ -126,6 +126,10 @@ else
   echo "No omp config backup at $OMP_SRC; skipping omp restore" >&2
 fi
 
+# Expose pi, omp, and shared ~/.agents skills to Antigravity (agy) and prune
+# any broken or stale managed symlinks.
+"$ROOT_DIR/scripts/link-agy-skills.sh" --prune
+
 cat <<EOF
 
 Done.
